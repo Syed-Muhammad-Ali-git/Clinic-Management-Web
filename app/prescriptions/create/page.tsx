@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchPatientsAction } from '@/redux/actions/patient-action/patient-action';
 import useRequireAuth from '@/lib/hooks/useRequireAuth';
-import type { RootState } from '@/redux/store';
+import type { AppDispatch, RootState } from '@/redux/store';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'react-toastify';
@@ -12,27 +13,42 @@ type Med = { name: string; dose: string; frequency: string; duration: string };
 
 export default function CreatePrescription() {
   const { loading } = useRequireAuth(['doctor', 'admin']);
-  const user = useSelector((state: RootState) => state.auth.loginData);
+  const dispatch = useDispatch() as AppDispatch;
+  // Use user profile (has name + role) instead of auth slice (only has uid/email)
+  const currentUser = useSelector((state: RootState) => state.user.userData);
+  const patients    = useSelector((state: RootState) => state.patient.patients);
   const router = useRouter();
 
-  const [patientId, setPatientId] = useState('');
-  const [notes, setNotes] = useState('');
-  const [meds, setMeds] = useState<Med[]>([{ name: '', dose: '', frequency: '', duration: '' }]);
-  const [submitting, setSubmitting] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState('');
-  const [pdfBase64, setPdfBase64] = useState('');
-  const [error, setError] = useState('');
+  const [patientId,   setPatientId]   = useState('');
+  const [patientName, setPatientName] = useState('');
+  const [notes,       setNotes]       = useState('');
+  const [meds,        setMeds]        = useState<Med[]>([{ name: '', dose: '', frequency: '', duration: '' }]);
+  const [submitting,  setSubmitting]  = useState(false);
+  const [pdfUrl,      setPdfUrl]      = useState('');
+  const [pdfBase64,   setPdfBase64]   = useState('');
+  const [error,       setError]       = useState('');
+
+  // Load patients for dropdown
+  useEffect(() => {
+    dispatch(fetchPatientsAction()).catch(() => {});
+  }, [dispatch]);
+
+  const handlePatientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = patients.find((p) => p.id === e.target.value);
+    setPatientId(e.target.value);
+    setPatientName(selected?.name ?? '');
+  };
 
   const updateMed = (i: number, field: keyof Med, val: string) => {
     setMeds(prev => prev.map((m, idx) => idx === i ? { ...m, [field]: val } : m));
   };
 
-  const addMed = () => setMeds(prev => [...prev, { name: '', dose: '', frequency: '', duration: '' }]);
+  const addMed    = () => setMeds(prev => [...prev, { name: '', dose: '', frequency: '', duration: '' }]);
   const removeMed = (i: number) => setMeds(prev => prev.filter((_, idx) => idx !== i));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!patientId.trim()) { toast.error('Patient ID is required.'); return; }
+    if (!patientId.trim()) { toast.error('Patient is required.'); return; }
     const emptyMed = meds.find(m => !m.name || !m.dose || !m.frequency);
     if (emptyMed) { toast.error('Fill in all medication fields.'); return; }
 
@@ -42,14 +58,22 @@ export default function CreatePrescription() {
       const res = await fetch('/api/prescriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientId, doctorId: user?.uid, meds, notes }),
+        body: JSON.stringify({
+          patientId,
+          patientName,
+          doctorId:   currentUser?.uid   ?? '',
+          doctorName: currentUser?.name  ?? currentUser?.email ?? '',
+          meds,
+          notes,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create prescription');
-      if (data.pdfUrl) setPdfUrl(data.pdfUrl);
+      if (data.pdfUrl)    setPdfUrl(data.pdfUrl);
       if (data.pdfBase64) setPdfBase64(data.pdfBase64);
       toast.success('Prescription created and PDF generated!');
     } catch (err: any) {
+      setError(err?.message || 'Something went wrong. Please try again.');
       toast.error(err?.message || 'Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);
@@ -63,6 +87,7 @@ export default function CreatePrescription() {
   );
 
   const inputCls = 'w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition bg-white';
+  const labelCls = 'block text-sm font-medium text-gray-700 mb-1';
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -109,14 +134,32 @@ export default function CreatePrescription() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Patient ID <span className="text-red-500">*</span></label>
-            <input required value={patientId} onChange={e => setPatientId(e.target.value)}
-              placeholder="Enter patient ID"
-              className={inputCls} />
+            <label className={labelCls}>Patient <span className="text-red-500">*</span></label>
+            {patients.length > 0 ? (
+              <select value={patientId} onChange={handlePatientChange} className={inputCls}>
+                <option value="">— Select patient —</option>
+                {patients.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}{p.email ? ` (${p.email})` : p.phone ? ` (${p.phone})` : ''}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div>
+                <input
+                  required
+                  value={patientId}
+                  onChange={e => { setPatientId(e.target.value); setPatientName(''); }}
+                  placeholder="Enter patient ID"
+                  className={inputCls}
+                />
+                <p className="text-xs text-gray-400 mt-1">No patients loaded — enter patient ID manually</p>
+              </div>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes / Diagnosis</label>
+            <label className={labelCls}>Notes / Diagnosis</label>
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
               placeholder="Notes about the prescription..."
               className={`${inputCls} resize-none`} />
