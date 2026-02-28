@@ -12,12 +12,10 @@ export function middleware(request: NextRequest) {
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname === route);
   const isRootPath = pathname === '/';
 
-  // Not logged in → redirect to login for protected routes
   if ((isProtectedRoute || isRootPath) && !token) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Already logged in → redirect away from login / signup / root
   if ((isAuthRoute || isRootPath) && token) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }

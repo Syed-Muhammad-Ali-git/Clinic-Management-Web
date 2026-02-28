@@ -20,6 +20,7 @@ export default function CreatePrescription() {
   const [meds, setMeds] = useState<Med[]>([{ name: '', dose: '', frequency: '', duration: '' }]);
   const [submitting, setSubmitting] = useState(false);
   const [pdfUrl, setPdfUrl] = useState('');
+  const [pdfBase64, setPdfBase64] = useState('');
   const [error, setError] = useState('');
 
   const updateMed = (i: number, field: keyof Med, val: string) => {
@@ -45,7 +46,8 @@ export default function CreatePrescription() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create prescription');
-      setPdfUrl(data.pdfUrl);
+      if (data.pdfUrl) setPdfUrl(data.pdfUrl);
+      if (data.pdfBase64) setPdfBase64(data.pdfBase64);
       toast.success('Prescription created and PDF generated!');
     } catch (err: any) {
       toast.error(err?.message || 'Something went wrong. Please try again.');
@@ -75,16 +77,25 @@ export default function CreatePrescription() {
         </div>
       </div>
 
-      {pdfUrl ? (
+      {(pdfUrl || pdfBase64) ? (
         <div className="bg-white rounded-xl border border-green-200 p-8 text-center shadow-sm">
           <p className="text-4xl mb-3">✅</p>
           <h2 className="text-lg font-semibold text-gray-800 mb-2">Prescription Created!</h2>
-          <p className="text-sm text-gray-500 mb-5">PDF has been generated and uploaded.</p>
+          <p className="text-sm text-gray-500 mb-5">PDF has been generated and is ready to download.</p>
           <div className="flex gap-3 justify-center">
-            <a href={pdfUrl} target="_blank" rel="noreferrer"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">
-              📥 Download PDF
-            </a>
+            {pdfUrl ? (
+              <a href={pdfUrl} target="_blank" rel="noreferrer"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+                📥 Download PDF
+              </a>
+            ) : pdfBase64 ? (
+              <a
+                href={`data:application/pdf;base64,${pdfBase64}`}
+                download={`prescription.pdf`}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+                📥 Download PDF
+              </a>
+            ) : null}
             <button onClick={() => router.push('/prescriptions')}
               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition">
               View all
