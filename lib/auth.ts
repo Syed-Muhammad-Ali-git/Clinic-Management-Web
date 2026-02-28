@@ -13,40 +13,59 @@ export const signup = async (
   password: string,
   displayName: string
 ): Promise<User> => {
-  const userCredential = await createUserWithEmailAndPassword(
-    auth,
-    email,
-    password
-  );
-  
-  // Update user profile with display name
-  if (userCredential.user) {
-    await updateProfile(userCredential.user, {
-      displayName: displayName
-    });
+  try {
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+
+    if (userCredential.user) {
+      await updateProfile(userCredential.user, {
+        displayName: displayName
+      });
+    }
+
+    return userCredential.user;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Signup failed';
+    throw new Error(msg);
   }
-  
-  return userCredential.user;
 };
 
 export const login = async (
   email: string,
   password: string
 ): Promise<User> => {
-  const userCredential = await signInWithEmailAndPassword(
-    auth,
-    email,
-    password
-  );
-  return userCredential.user;
+  try {
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+    return userCredential.user;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Login failed';
+    throw new Error(msg);
+  }
 };
 
 export const logout = async (): Promise<void> => {
-  await signOut(auth);
+  try {
+    await signOut(auth);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Logout failed';
+    throw new Error(msg);
+  }
 };
 
 export const forgotPassword = async (email: string): Promise<void> => {
-  await sendPasswordResetEmail(auth, email);
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Password reset failed';
+    throw new Error(msg);
+  }
 };
 
 export const getCurrentUser = (): User | null => {
