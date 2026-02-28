@@ -60,7 +60,7 @@ export default function CreatePrescription() {
     </div>
   );
 
-  const inputCls = 'w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition';
+  const inputCls = 'w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition bg-white';
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -128,25 +128,25 @@ export default function CreatePrescription() {
                       <label className="text-xs text-gray-500 mb-0.5 block">Medicine name</label>
                       <input value={m.name} onChange={e => updateMed(i, 'name', e.target.value)} required
                         placeholder="e.g. Amoxicillin"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 bg-white" />
                     </div>
                     <div>
                       <label className="text-xs text-gray-500 mb-0.5 block">Dose</label>
                       <input value={m.dose} onChange={e => updateMed(i, 'dose', e.target.value)} required
                         placeholder="e.g. 500mg"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 bg-white" />
                     </div>
                     <div>
                       <label className="text-xs text-gray-500 mb-0.5 block">Frequency</label>
                       <input value={m.frequency} onChange={e => updateMed(i, 'frequency', e.target.value)} required
                         placeholder="e.g. Twice daily"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 bg-white" />
                     </div>
                     <div>
                       <label className="text-xs text-gray-500 mb-0.5 block">Duration</label>
                       <input value={m.duration} onChange={e => updateMed(i, 'duration', e.target.value)} required
                         placeholder="e.g. 7 days"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white" />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 bg-white" />
                     </div>
                   </div>
                   {meds.length > 1 && (
