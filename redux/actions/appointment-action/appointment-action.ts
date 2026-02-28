@@ -38,29 +38,30 @@ export const fetchAppointmentsAction =
       dispatch(setAppointmentLoading(true));
       dispatch(setAppointmentError(null));
 
-      let q = query(collection(db, 'appointments'), orderBy('scheduledAt', 'desc'));
-
-      if (filter.doctorId) {
-        q = query(
-          collection(db, 'appointments'),
-          where('doctorId', '==', filter.doctorId),
-          orderBy('scheduledAt', 'desc'),
-        );
-      } else if (filter.patientId) {
-        q = query(
-          collection(db, 'appointments'),
-          where('patientId', '==', filter.patientId),
-          orderBy('scheduledAt', 'desc'),
-        );
-      } else if (filter.status) {
-        q = query(
-          collection(db, 'appointments'),
-          where('status', '==', filter.status),
-          orderBy('scheduledAt', 'desc'),
-        );
+      let snap;
+      try {
+        let q = query(collection(db, 'appointments'), orderBy('scheduledAt', 'desc'));
+        if (filter.doctorId) {
+          q = query(collection(db, 'appointments'), where('doctorId', '==', filter.doctorId), orderBy('scheduledAt', 'desc'));
+        } else if (filter.patientId) {
+          q = query(collection(db, 'appointments'), where('patientId', '==', filter.patientId), orderBy('scheduledAt', 'desc'));
+        } else if (filter.status) {
+          q = query(collection(db, 'appointments'), where('status', '==', filter.status), orderBy('scheduledAt', 'desc'));
+        }
+        snap = await getDocs(q);
+      } catch {
+        // Fallback: no orderBy (avoids missing composite index errors)
+        if (filter.doctorId) {
+          snap = await getDocs(query(collection(db, 'appointments'), where('doctorId', '==', filter.doctorId)));
+        } else if (filter.patientId) {
+          snap = await getDocs(query(collection(db, 'appointments'), where('patientId', '==', filter.patientId)));
+        } else if (filter.status) {
+          snap = await getDocs(query(collection(db, 'appointments'), where('status', '==', filter.status)));
+        } else {
+          snap = await getDocs(collection(db, 'appointments'));
+        }
       }
 
-      const snap = await getDocs(q);
       const appointments: Appointment[] = snap.docs.map((d) => ({
         id: d.id,
         ...d.data(),

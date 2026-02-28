@@ -34,23 +34,25 @@ export const fetchPrescriptionsAction =
       dispatch(setPrescriptionLoading(true));
       dispatch(setPrescriptionError(null));
 
-      let q = query(collection(db, 'prescriptions'), orderBy('createdAt', 'desc'));
-
-      if (filter.patientId) {
-        q = query(
-          collection(db, 'prescriptions'),
-          where('patientId', '==', filter.patientId),
-          orderBy('createdAt', 'desc'),
-        );
-      } else if (filter.doctorId) {
-        q = query(
-          collection(db, 'prescriptions'),
-          where('doctorId', '==', filter.doctorId),
-          orderBy('createdAt', 'desc'),
-        );
+      let snap;
+      try {
+        let q = query(collection(db, 'prescriptions'), orderBy('createdAt', 'desc'));
+        if (filter.patientId) {
+          q = query(collection(db, 'prescriptions'), where('patientId', '==', filter.patientId), orderBy('createdAt', 'desc'));
+        } else if (filter.doctorId) {
+          q = query(collection(db, 'prescriptions'), where('doctorId', '==', filter.doctorId), orderBy('createdAt', 'desc'));
+        }
+        snap = await getDocs(q);
+      } catch {
+        if (filter.patientId) {
+          snap = await getDocs(query(collection(db, 'prescriptions'), where('patientId', '==', filter.patientId)));
+        } else if (filter.doctorId) {
+          snap = await getDocs(query(collection(db, 'prescriptions'), where('doctorId', '==', filter.doctorId)));
+        } else {
+          snap = await getDocs(collection(db, 'prescriptions'));
+        }
       }
 
-      const snap = await getDocs(q);
       const prescriptions: Prescription[] = snap.docs.map((d) => ({
         id: d.id,
         ...d.data(),

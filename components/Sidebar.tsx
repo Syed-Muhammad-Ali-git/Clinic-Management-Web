@@ -134,7 +134,7 @@ export default function Sidebar({ role, open, onClose }: SidebarProps) {
         <Group justify="space-between" wrap="nowrap">
           <Group gap="sm">
             <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-            <Text size="sm" fw={isActive ? 600 : 500}>
+            <Text size="sm" fw={isActive ? 600 : 500} c="inherit">
               {item.label}
             </Text>
           </Group>
@@ -194,7 +194,7 @@ export default function Sidebar({ role, open, onClose }: SidebarProps) {
               </Text>
               <Text
                 size="xs"
-                c="gray.6"
+                c="gray.4"
                 fw={600}
                 mt={4}
                 style={{ letterSpacing: "1px", textTransform: "uppercase" }}
@@ -213,7 +213,7 @@ export default function Sidebar({ role, open, onClose }: SidebarProps) {
             <Text
               size="xs"
               fw={700}
-              c="gray.7"
+              c="gray.5"
               px="sm"
               mb={8}
               style={{ textTransform: "uppercase", letterSpacing: "1px" }}
@@ -282,7 +282,7 @@ export default function Sidebar({ role, open, onClose }: SidebarProps) {
             })}
           >
             <LogOut size={18} />
-            <Text size="sm" fw={600}>
+            <Text size="sm" fw={600} c="inherit">
               Sign Out
             </Text>
           </UnstyledButton>

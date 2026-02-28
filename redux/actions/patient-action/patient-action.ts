@@ -30,8 +30,14 @@ export const fetchPatientsAction = () => async (dispatch: AppDispatch) => {
     dispatch(setPatientLoading(true));
     dispatch(setPatientError(null));
 
-    const q = query(collection(db, 'patients'), orderBy('createdAt', 'desc'));
-    const snap = await getDocs(q);
+    // Try ordered query first; fall back to unordered if index missing
+    let snap;
+    try {
+      const q = query(collection(db, 'patients'), orderBy('createdAt', 'desc'));
+      snap = await getDocs(q);
+    } catch {
+      snap = await getDocs(collection(db, 'patients'));
+    }
     const patients: Patient[] = snap.docs.map((d) => ({
       id: d.id,
       ...d.data(),

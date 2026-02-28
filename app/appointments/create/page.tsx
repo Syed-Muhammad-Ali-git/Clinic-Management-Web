@@ -11,11 +11,13 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { z } from 'zod';
 import Link from 'next/link';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const appointmentSchema = z.object({
   patientId: z.string().min(1, 'Select a patient'),
   patientName: z.string().min(1, 'Patient name is required'),
-  doctorId: z.string().min(1, 'Doctor ID is required'),
+  doctorId: z.string().min(1, 'Select a doctor'),
   doctorName: z.string().optional(),
   scheduledAt: z.string().min(1, 'Select a date and time'),
   reason: z.string().min(3, 'Provide a reason (at least 3 characters)'),
@@ -23,9 +25,10 @@ const appointmentSchema = z.object({
 });
 
 type AppointmentForm = z.infer<typeof appointmentSchema>;
+type DoctorOption = { uid: string; name: string; email: string };
 
 const inputCls =
-  'w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition bg-white';
+  'w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition bg-white text-gray-900';
 const labelCls = 'block text-sm font-medium text-gray-700 mb-1';
 const errorCls = 'text-xs text-red-600 mt-1';
 
@@ -36,23 +39,44 @@ export default function CreateAppointment() {
   const patients = useSelector((state: RootState) => state.patient.patients);
   const currentUser = useSelector((state: RootState) => state.user.userData);
 
+  const isDoctor = currentUser?.role === 'doctor';
+
   const [form, setForm] = useState<AppointmentForm>({
     patientId: '',
     patientName: '',
-    doctorId: currentUser?.uid ?? '',
-    doctorName: currentUser?.name ?? '',
+    doctorId: isDoctor ? (currentUser?.uid ?? '') : '',
+    doctorName: isDoctor ? (currentUser?.name ?? '') : '',
     scheduledAt: '',
     reason: '',
     notes: '',
   });
   const [errors, setErrors] = useState<Partial<Record<keyof AppointmentForm, string>>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [doctors, setDoctors] = useState<DoctorOption[]>([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(false);
 
+  // Fetch patients list
   useEffect(() => {
-    dispatch(fetchPatientsAction());
+    dispatch(fetchPatientsAction()).catch(() => {});
   }, [dispatch]);
 
-  // Auto-fill doctor fields if current user is a doctor
+  // Fetch doctors list (for admin/receptionist)
+  useEffect(() => {
+    if (isDoctor) return;
+    setDoctorsLoading(true);
+    getDocs(query(collection(db, 'users'), where('role', '==', 'doctor')))
+      .then((snap) => {
+        const list: DoctorOption[] = snap.docs.map((d) => {
+          const data = d.data();
+          return { uid: d.id, name: data.name ?? data.displayName ?? 'Doctor', email: data.email ?? '' };
+        });
+        setDoctors(list);
+      })
+      .catch(() => toast.error('Could not load doctors list.'))
+      .finally(() => setDoctorsLoading(false));
+  }, [isDoctor]);
+
+  // Auto-fill doctor when logged in as doctor
   useEffect(() => {
     if (currentUser?.role === 'doctor') {
       setForm((prev) => ({
@@ -70,7 +94,6 @@ export default function CreateAppointment() {
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-  // When patient dropdown changes, also update patientName
   const handlePatientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selected = patients.find((p) => p.id === e.target.value);
     setForm((prev) => ({
@@ -79,6 +102,16 @@ export default function CreateAppointment() {
       patientName: selected?.name ?? '',
     }));
     setErrors((prev) => ({ ...prev, patientId: undefined }));
+  };
+
+  const handleDoctorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = doctors.find((d) => d.uid === e.target.value);
+    setForm((prev) => ({
+      ...prev,
+      doctorId: e.target.value,
+      doctorName: selected?.name ?? '',
+    }));
+    setErrors((prev) => ({ ...prev, doctorId: undefined }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,8 +139,9 @@ export default function CreateAppointment() {
       );
       toast.success('Appointment booked successfully!');
       setTimeout(() => router.push('/appointments'), 1200);
-    } catch {
-      toast.error('Failed to book appointment. Please try again.');
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to book appointment. Please try again.';
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -125,7 +159,7 @@ export default function CreateAppointment() {
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/appointments" className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-500">← Back</Link>
+        <Link href="/appointments" className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-500 text-sm">← Back</Link>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Book Appointment</h1>
           <p className="text-sm text-gray-500 mt-0.5">Schedule a new appointment for a patient</p>
@@ -133,54 +167,54 @@ export default function CreateAppointment() {
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
-        {/* Patient select */}
+
+        {/* Patient */}
         <div>
           <label className={labelCls}>Patient <span className="text-red-500">*</span></label>
           {patients.length > 0 ? (
             <select value={form.patientId} onChange={handlePatientChange} className={inputCls}>
               <option value="">— Select patient —</option>
               {patients.map((p) => (
-                <option key={p.id} value={p.id}>{p.name} ({p.email || p.phone})</option>
+                <option key={p.id} value={p.id}>{p.name}{p.email ? ` (${p.email})` : p.phone ? ` (${p.phone})` : ''}</option>
               ))}
             </select>
           ) : (
-            <input
-              value={form.patientId}
-              onChange={set('patientId')}
-              placeholder="Enter patient ID"
-              className={inputCls}
-            />
+            <div>
+              <input value={form.patientId} onChange={set('patientId')} placeholder="Enter patient ID" className={inputCls} />
+              <p className="text-xs text-gray-400 mt-1">No patients loaded — enter patient ID manually</p>
+            </div>
           )}
           {errors.patientId && <p className={errorCls}>{errors.patientId}</p>}
         </div>
 
-        {/* Doctor ID + Name */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>Doctor ID <span className="text-red-500">*</span></label>
-            <input
-              value={form.doctorId}
-              onChange={set('doctorId')}
-              placeholder="doctor-uid"
-              className={inputCls}
-              readOnly={currentUser?.role === 'doctor'}
-            />
-            {errors.doctorId && <p className={errorCls}>{errors.doctorId}</p>}
-          </div>
-          <div>
-            <label className={labelCls}>Doctor Name</label>
-            <input
-              value={form.doctorName}
-              onChange={set('doctorName')}
-              placeholder="Dr. Smith"
-              className={inputCls}
-            />
-          </div>
+        {/* Doctor */}
+        <div>
+          <label className={labelCls}>Doctor <span className="text-red-500">*</span></label>
+          {isDoctor ? (
+            <input value={form.doctorName || form.doctorId} readOnly className={`${inputCls} bg-gray-50 cursor-not-allowed`} />
+          ) : doctorsLoading ? (
+            <div className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-400 bg-white">
+              <span className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" /> Loading doctors...
+            </div>
+          ) : doctors.length > 0 ? (
+            <select value={form.doctorId} onChange={handleDoctorChange} className={inputCls}>
+              <option value="">— Select doctor —</option>
+              {doctors.map((d) => (
+                <option key={d.uid} value={d.uid}>{d.name}{d.email ? ` (${d.email})` : ''}</option>
+              ))}
+            </select>
+          ) : (
+            <div>
+              <input value={form.doctorId} onChange={set('doctorId')} placeholder="Enter doctor UID" className={inputCls} />
+              <p className="text-xs text-gray-400 mt-1">No doctors found — enter doctor UID manually</p>
+            </div>
+          )}
+          {errors.doctorId && <p className={errorCls}>{errors.doctorId}</p>}
         </div>
 
         {/* Date / Time */}
         <div>
-          <label className={labelCls}>Scheduled At <span className="text-red-500">*</span></label>
+          <label className={labelCls}>Date &amp; Time <span className="text-red-500">*</span></label>
           <input
             type="datetime-local"
             value={form.scheduledAt}
@@ -194,25 +228,14 @@ export default function CreateAppointment() {
         {/* Reason */}
         <div>
           <label className={labelCls}>Reason for Visit <span className="text-red-500">*</span></label>
-          <input
-            value={form.reason}
-            onChange={set('reason')}
-            placeholder="e.g. Fever, Follow-up, Annual checkup"
-            className={inputCls}
-          />
+          <input value={form.reason} onChange={set('reason')} placeholder="e.g. Fever, Follow-up, Annual checkup" className={inputCls} />
           {errors.reason && <p className={errorCls}>{errors.reason}</p>}
         </div>
 
         {/* Notes */}
         <div>
-          <label className={labelCls}>Notes (optional)</label>
-          <textarea
-            value={form.notes}
-            onChange={set('notes')}
-            rows={2}
-            placeholder="Any additional information..."
-            className={`${inputCls} resize-none`}
-          />
+          <label className={labelCls}>Notes <span className="text-gray-400 font-normal">(optional)</span></label>
+          <textarea value={form.notes} onChange={set('notes')} rows={2} placeholder="Any additional information..." className={`${inputCls} resize-none`} />
         </div>
 
         {/* Actions */}
@@ -221,12 +244,11 @@ export default function CreateAppointment() {
             type="submit"
             disabled={submitting}
             className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition disabled:opacity-60 flex items-center justify-center gap-2">
-            {submitting ? (
-              <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Booking...</>
-            ) : '📅 Book Appointment'}
+            {submitting
+              ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Booking...</>
+              : 'Book Appointment'}
           </button>
-          <Link href="/appointments"
-            className="px-5 py-3 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition text-center">
+          <Link href="/appointments" className="px-5 py-3 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition text-center">
             Cancel
           </Link>
         </div>
