@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createAppointmentAction } from '@/redux/actions/appointment-action/appointment-action';
 import { fetchPatientsAction } from '@/redux/actions/patient-action/patient-action';
@@ -33,6 +33,18 @@ const labelCls = 'block text-sm font-medium text-gray-700 mb-1';
 const errorCls = 'text-xs text-red-600 mt-1';
 
 export default function CreateAppointment() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-64">
+        <span className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+      </div>
+    }>
+      <CreateAppointmentInner />
+    </Suspense>
+  );
+}
+
+function CreateAppointmentInner() {
   const { loading } = useRequireAuth(['admin', 'receptionist', 'doctor']);
   const dispatch = useDispatch() as AppDispatch;
   const router = useRouter();
