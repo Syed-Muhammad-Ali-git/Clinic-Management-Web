@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { FieldValue } from "firebase-admin/firestore";
-import { adminDb, adminStorage } from "@/lib/firebaseAdmin";
+import { adminDb, getAdminStorage } from "@/lib/firebaseAdmin";
 
 export async function POST(req: Request) {
   try {
@@ -37,7 +37,8 @@ export async function POST(req: Request) {
     const pdfBytes = await pdfDoc.save();
 
     const filePath = `prescriptions/${presRef.id}.pdf`;
-    const file = adminStorage.file(filePath);
+    const bucket = getAdminStorage().bucket();
+    const file = bucket.file(filePath);
     await file.save(Buffer.from(pdfBytes), {
       metadata: {
         contentType: "application/pdf",

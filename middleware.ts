@@ -1,47 +1,28 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PROTECTED = ['/dashboard', '/patients', '/appointments', '/prescriptions'];
-const PUBLIC_ONLY = ['/login', '/signup'];
+const PROTECTED_ROUTES = ['/dashboard', '/patients', '/appointments', '/prescriptions', '/ai'];
 
-export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+export function middleware(request: NextRequest) {
+  const token = request.cookies.get('clinic-auth-token')?.value;
+  const { pathname } = request.nextUrl;
 
-  // Read token from multiple possible cookie names
-  const token =
-    req.cookies.get('token')?.value ||
-    req.cookies.get('__session')?.value ||
-    '';
+  const isProtectedRoute = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
+  const isRootPath = pathname === '/';
 
-  const isProtected = PROTECTED.some(p => pathname.startsWith(p));
-  const isPublicOnly = PUBLIC_ONLY.some(p => pathname.startsWith(p));
-
-  // Redirect unauthenticated users away from protected pages
-  if (isProtected && !token) {
-    const url = req.nextUrl.clone();
-    url.pathname = '/login';
-    url.search = `?redirect=${encodeURIComponent(pathname)}`;
-    return NextResponse.redirect(url);
+  if ((isProtectedRoute || isRootPath) && !token) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
-
-  // Redirect authenticated users away from login/signup
-  if (isPublicOnly && token) {
-    const url = req.nextUrl.clone();
-    url.pathname = '/dashboard';
-    url.search = '';
-    return NextResponse.redirect(url);
+  
+  if (pathname === '/login') {
+    if (token) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
   }
-
+  
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    '/dashboard/:path*',
-    '/patients/:path*',
-    '/appointments/:path*',
-    '/prescriptions/:path*',
-    '/login',
-    '/signup',
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
 };

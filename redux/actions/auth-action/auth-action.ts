@@ -1,6 +1,6 @@
 // Auth actions - all Firebase Auth API calls live here
 
-import { setCookie, deleteCookie } from 'cookies-next/client';
+import Cookies from 'js-cookie';
 import { AppDispatch } from '@/redux/store';
 import {
   loginUser,
@@ -37,7 +37,7 @@ export const signupUserAction =
       });
 
       const token = await user.getIdToken();
-      setCookie('token', token, { path: '/' });
+      Cookies.set('clinic-auth-token', token, { expires: 7, secure: true });
 
       dispatch(loginUser({ uid: user.uid, email: user.email, displayName: user.displayName }));
       await dispatch(fetchUserDataAction(user.uid));
@@ -64,7 +64,7 @@ export const loginUserAction =
       const user = await login(credentials.email, credentials.password);
 
       const token = await user.getIdToken();
-      setCookie('token', token, { path: '/' });
+      Cookies.set('clinic-auth-token', token, { expires: 7, secure: true });
 
       dispatch(loginUser({ uid: user.uid, email: user.email, displayName: user.displayName }));
       await dispatch(fetchUserDataAction(user.uid));
@@ -88,7 +88,7 @@ export const logoutUserAction = () => async (dispatch: AppDispatch) => {
     dispatch(setAuthError(null));
 
     await logout();
-    deleteCookie('token', { path: '/' });
+    Cookies.remove('clinic-auth-token');
 
     dispatch(logoutUser());
     dispatch(clearUser());
@@ -113,7 +113,7 @@ export const googleSignInAction = () => async (dispatch: AppDispatch) => {
     const user = await signInWithGoogle();
 
     const token = await user.getIdToken();
-    setCookie('token', token, { path: '/' });
+    Cookies.set('clinic-auth-token', token, { expires: 7, secure: true });
 
     dispatch(loginUser({ uid: user.uid, email: user.email, displayName: user.displayName }));
     await dispatch(fetchUserDataAction(user.uid));
