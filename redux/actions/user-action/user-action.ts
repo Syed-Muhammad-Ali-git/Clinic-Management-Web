@@ -1,46 +1,57 @@
-// All user related action function are defined here...!
+// User actions - Firestore user profile API calls live here
 
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { FETCH_ALL_USERS } from "@/redux/reducers/user-reducer/user-reducer";
+import { AppDispatch } from '@/redux/store';
+import {
+  setUserData,
+  setUserLoading,
+  setUserError,
+} from '@/redux/reducers/user-reducer/user-reducer';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { UserProfile } from '@/app/types/user';
 
-const fetchAllUsers = () => {
-  return async (dispatch: any) => {
-    const fetchUsersFromFB = await getDocs(collection(db, "Users"));
-    // console.log('Users: ' , fetchUsersFromFB);
-    const users: any[] = [];
-    fetchUsersFromFB.forEach((doc) => {
-      //   console.log(doc.id, " => ", doc.data());
+/**
+ * Thunk action to fetch the logged-in user's Firestore profile.
+ * Dispatches setUserData with name, email, role, etc.
+ */
+export const fetchUserDataAction =
+  (uid: string) => async (dispatch: AppDispatch) => {
+    try {
+      dispatch(setUserLoading(true));
+      dispatch(setUserError(null));
 
-      const obj = {
-        ...doc.data(),
-        docId: doc.id,
-      };
-      users.push(obj);
-    });
-    // console.log("Users: ", users);
-
-    // Target user data...!
-    const targetUsers = [...users].map((itemUser: any) => {
-      //   console.log(itemUser);
-      const { password, ...rest } = itemUser;
-      return rest;
-    });
-
-    // console.log(targetUsers);
-    targetUsers &&
-      dispatch({
-        type: FETCH_ALL_USERS,
-        payload: targetUsers,
-      });
+      const snap = await getDoc(doc(db, 'users', uid));
+      if (snap.exists()) {
+        const profile = { uid: snap.id, ...snap.data() } as UserProfile;
+        dispatch(setUserData(profile));
+        return profile;
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch user data';
+      dispatch(setUserError(message));
+      throw error;
+    } finally {
+      dispatch(setUserLoading(false));
+    }
   };
-};
 
-const deleteUser = (userDocId: string) => {
-  return async () => {
-    console.log("User doc id: ", userDocId);
-    await deleteDoc(doc(db, "Users", userDocId));
+/**
+ * Thunk action to update logged-in user's Firestore profile fields.
+ */
+export const updateUserProfileAction =
+  (uid: string, updates: Partial<UserProfile>) =>
+  async (dispatch: AppDispatch) => {
+    try {
+      dispatch(setUserLoading(true));
+      dispatch(setUserError(null));
+
+      await setDoc(doc(db, 'users', uid), updates, { merge: true });
+      await dispatch(fetchUserDataAction(uid));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update profile';
+      dispatch(setUserError(message));
+      throw error;
+    } finally {
+      dispatch(setUserLoading(false));
+    }
   };
-};
-
-export { fetchAllUsers, deleteUser };

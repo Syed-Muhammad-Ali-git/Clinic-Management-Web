@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts } from "pdf-lib";
+import { FieldValue } from "firebase-admin/firestore";
 import { adminDb, adminStorage } from "@/lib/firebaseAdmin";
 
 export async function POST(req: Request) {
@@ -10,9 +11,7 @@ export async function POST(req: Request) {
 
     const presRef = await adminDb.collection("prescriptions").add({
       ...body,
-      createdAt: adminDb.FieldValue
-        ? adminDb.FieldValue.serverTimestamp()
-        : new Date(),
+      createdAt: FieldValue.serverTimestamp(),
     });
 
     // Create simple PDF

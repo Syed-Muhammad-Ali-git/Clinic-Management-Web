@@ -2,21 +2,20 @@
 
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchPatients } from '@/redux/actions/patient-action/patient-action';
-import { fetchAppointments } from '@/redux/actions/appointment-action/appointment-action';
-import { updateAppointment } from '@/redux/actions/appointment-action/appointment-action';
-import type { RootState } from '@/redux/store';
+import { fetchPatientsAction } from '@/redux/actions/patient-action/patient-action';
+import { fetchAppointmentsAction, updateAppointmentAction } from '@/redux/actions/appointment-action/appointment-action';
+import type { AppDispatch, RootState } from '@/redux/store';
 import Link from 'next/link';
 
 export default function DoctorDashboard() {
-  const dispatch = useDispatch();
-  const user = useSelector((state: RootState) => state.auth.user);
+  const dispatch = useDispatch() as AppDispatch;
+  const user = useSelector((state: RootState) => state.auth.loginData);
   const patients = useSelector((state: RootState) => state.patient.patients);
   const appointments = useSelector((state: RootState) => state.appointment.appointments);
 
   useEffect(() => {
-    dispatch<any>(fetchPatients());
-    dispatch<any>(fetchAppointments(user?.uid ? { doctorId: user.uid } : {}));
+    dispatch(fetchPatientsAction());
+    dispatch(fetchAppointmentsAction(user?.uid ? { doctorId: user.uid } : {}));
   }, [dispatch, user?.uid]);
 
   const todayStr = new Date().toLocaleDateString();
@@ -27,7 +26,7 @@ export default function DoctorDashboard() {
   const pending = appointments.filter((a: any) => a.status === 'pending');
 
   const handleStatus = (id: string, status: string) => {
-    dispatch<any>(updateAppointment(id, { status }));
+    dispatch(updateAppointmentAction(id, { status: status as import('@/app/types/appointment').AppointmentStatus }));
   };
 
   return (

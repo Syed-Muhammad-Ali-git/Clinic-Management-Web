@@ -2,19 +2,19 @@
 
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAppointments } from "@/redux/actions/appointment-action/appointment-action";
-import type { RootState } from "@/redux/store";
+import { fetchAppointmentsAction } from '@/redux/actions/appointment-action/appointment-action';
+import type { AppDispatch, RootState } from "@/redux/store";
 import Link from "next/link";
 
 export default function PatientDashboard() {
-  const dispatch = useDispatch();
-  const user = useSelector((state: RootState) => state.auth.user);
+  const dispatch = useDispatch() as AppDispatch;
+  const user = useSelector((state: RootState) => state.auth.loginData);
   const appointments = useSelector(
     (state: RootState) => state.appointment.appointments,
   );
 
   useEffect(() => {
-    if (user?.uid) dispatch<any>(fetchAppointments({ patientId: user.uid }));
+    if (user?.uid) dispatch(fetchAppointmentsAction({ patientId: user.uid }));
   }, [dispatch, user?.uid]);
 
   const upcoming = appointments.filter(

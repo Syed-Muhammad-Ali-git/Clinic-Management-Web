@@ -1,27 +1,50 @@
-// Patient reducer slices
+// Patient reducer - manages patients list and individual patient detail
 
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { Patient, PatientState } from '@/app/types/patient';
 
-const initialState = {
+const initialState: PatientState = {
   patients: [],
   currentPatient: null,
+  loading: false,
+  error: null,
 };
 
 const patientSlice = createSlice({
-  name: "patient",
+  name: 'patient',
   initialState,
   reducers: {
-    FETCH_PATIENTS: (state, action) => {
+    /** Replace the full patients list after fetch */
+    setPatients: (state, action: PayloadAction<Patient[]>) => {
       state.patients = action.payload;
+      state.loading = false;
+      state.error = null;
     },
-    SET_CURRENT_PATIENT: (state, action) => {
+    /** Set a single patient for view/edit operations */
+    setCurrentPatient: (state, action: PayloadAction<Patient>) => {
       state.currentPatient = action.payload;
+      state.loading = false;
     },
-    CLEAR_CURRENT_PATIENT: (state) => {
+    /** Clear the currently viewed/edited patient */
+    clearCurrentPatient: (state) => {
       state.currentPatient = null;
+    },
+    setPatientLoading: (state, action: PayloadAction<boolean>) => {
+      state.loading = action.payload;
+    },
+    setPatientError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload;
+      state.loading = false;
     },
   },
 });
 
-export const { FETCH_PATIENTS, SET_CURRENT_PATIENT, CLEAR_CURRENT_PATIENT } = patientSlice.actions;
+export const {
+  setPatients,
+  setCurrentPatient,
+  clearCurrentPatient,
+  setPatientLoading,
+  setPatientError,
+} = patientSlice.actions;
+
 export default patientSlice.reducer;

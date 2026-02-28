@@ -1,20 +1,40 @@
-// User reducer slices are defined here...!
+// User reducer - manages the logged-in user's profile data
 
-import { createSlice } from "@reduxjs/toolkit";
-const initialState = {
-  usersList: [],
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { UserProfile, UserState } from '@/app/types/user';
+
+const initialState: UserState = {
+  userData: null,
+  loading: false,
+  error: null,
 };
 
 const userSlice = createSlice({
-  name: "user",
-  initialState: initialState,
+  name: 'user',
+  initialState,
   reducers: {
-    FETCH_ALL_USERS: (state, action) => {
-      //   console.log("Users in redux: ", action.payload);
-      state.usersList = action.payload;
+    /** Set full user profile (name, email, role, etc.) from Firestore */
+    setUserData: (state, action: PayloadAction<UserProfile | null>) => {
+      state.userData = action.payload;
+      state.loading = false;
+      state.error = null;
+    },
+    setUserLoading: (state, action: PayloadAction<boolean>) => {
+      state.loading = action.payload;
+      state.error = null;
+    },
+    setUserError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload;
+      state.loading = false;
+    },
+    /** Clear user profile data on logout */
+    clearUser: (state) => {
+      state.userData = null;
+      state.error = null;
+      state.loading = false;
     },
   },
 });
 
-export const { FETCH_ALL_USERS } = userSlice.actions;
+export const { setUserData, setUserLoading, setUserError, clearUser } = userSlice.actions;
 export default userSlice.reducer;

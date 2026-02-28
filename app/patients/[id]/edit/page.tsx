@@ -2,14 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { getPatient, updatePatient } from '@/redux/actions/patient-action/patient-action';
+import { getPatientAction, updatePatientAction } from '@/redux/actions/patient-action/patient-action';
 import { useRouter, useParams } from 'next/navigation';
-import type { RootState } from '@/redux/store';
+import type { AppDispatch, RootState } from '@/redux/store';
 import useRequireAuth from '@/lib/hooks/useRequireAuth';
 
 export default function EditPatient() {
   const { loading } = useRequireAuth();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch() as AppDispatch;
   const params = useParams();
   const id = params?.id as string;
   const patient = useSelector((state: RootState) => state.patient.currentPatient);
@@ -19,12 +19,12 @@ export default function EditPatient() {
   const [contact, setContact] = useState('');
   const router = useRouter();
 
-  useEffect(() => { if (id) dispatch<any>(getPatient(id)); }, [dispatch, id]);
-  useEffect(() => { if (patient) { setName(patient.name || ''); setDob(patient.dob || ''); setContact(patient.contact || ''); } }, [patient]);
+  useEffect(() => { if (id) dispatch(getPatientAction(id)); }, [dispatch, id]);
+  useEffect(() => { if (patient) { setName(patient.name || ''); setDob((patient as any).dateOfBirth || (patient as any).dob || ''); setContact((patient as any).phone || (patient as any).contact || ''); } }, [patient]);
 
   const handleSubmit = async (e:any) => {
     e.preventDefault();
-    await dispatch<any>(updatePatient(id, { name, dob, contact }));
+    await dispatch(updatePatientAction(id, { name, dateOfBirth: dob, phone: contact }));
     router.push(`/patients/${id}`);
   };
 

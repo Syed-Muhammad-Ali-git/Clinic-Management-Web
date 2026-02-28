@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { logInUser, googleSignIn, sendPasswordReset } from '@/redux/actions/auth-action/auth-action';
+import { loginUserAction, googleSignInAction, sendPasswordResetAction } from '@/redux/actions/auth-action/auth-action';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { RootState } from '@/redux/store';
@@ -21,18 +21,18 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    await dispatch<any>(logInUser({ email, password }));
+    await dispatch<any>(loginUserAction({ email, password }));
     router.push('/dashboard');
   };
 
   const handleGoogle = async () => {
-    await dispatch<any>(googleSignIn());
+    await dispatch<any>(googleSignInAction());
     router.push('/dashboard');
   };
 
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
-    await dispatch<any>(sendPasswordReset(resetEmail));
+    await dispatch<any>(sendPasswordResetAction(resetEmail));
     setResetSent(true);
   };
 

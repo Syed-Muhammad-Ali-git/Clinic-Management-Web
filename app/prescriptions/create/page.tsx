@@ -10,7 +10,7 @@ type Med = { name: string; dose: string; frequency: string; duration: string };
 
 export default function CreatePrescription() {
   const { loading } = useRequireAuth(['doctor', 'admin']);
-  const user = useSelector((state: RootState) => state.auth.user);
+  const user = useSelector((state: RootState) => state.auth.loginData);
   const router = useRouter();
 
   const [patientId, setPatientId] = useState('');

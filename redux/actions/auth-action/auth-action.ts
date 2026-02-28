@@ -1,104 +1,149 @@
-// Centralized auth actions that call lib/auth helpers and update redux state
+// Auth actions - all Firebase Auth API calls live here
+
+import { setCookie, deleteCookie } from 'cookies-next/client';
+import { AppDispatch } from '@/redux/store';
+import {
+  loginUser,
+  logoutUser,
+  setAuthLoading,
+  setAuthError,
+  setRequestPasswordEmail,
+} from '@/redux/reducers/auth-reducer/auth-reducer';
+import { clearUser } from '@/redux/reducers/user-reducer/user-reducer';
 import { signup, login, logout, signInWithGoogle, forgotPassword } from '@/lib/auth';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { setUser, setLoading, setError, clearAuth } from '@/redux/slices/authSlice';
-import { setCookie, deleteCookie } from 'cookies-next/client';
+import { doc, setDoc } from 'firebase/firestore';
+import { fetchUserDataAction } from '@/redux/actions/user-action/user-action';
+import { LoginCredentials, SignupData } from '@/app/types/auth';
 
-interface UserData {
-  name?: string;
-  email: string;
-  password?: string;
-}
-
-const signUpUser = (userData: UserData) => {
-  return async (dispatch: any) => {
-    dispatch(setLoading(true));
+/**
+ * Thunk action to sign up a new user with email & password.
+ * Creates a Firestore user document with the selected role.
+ */
+export const signupUserAction =
+  (signupData: SignupData) => async (dispatch: AppDispatch) => {
     try {
-      const user = await signup(userData.email, userData.password || '', userData.name || '');
-      if (user) {
-        // create user doc in Firestore with default role 'patient'
-        await setDoc(doc(db, 'users', user.uid), {
-          name: user.displayName || userData.name || '',
-          email: user.email || userData.email,
-          role: 'patient',
-          createdAt: new Date(),
-        });
+      dispatch(setAuthLoading(true));
+      dispatch(setAuthError(null));
 
-        const token = await user.getIdToken();
-        setCookie('token', token);
-        dispatch(setUser({ uid: user.uid, email: user.email, displayName: user.displayName }));
-      }
-    } catch (err: any) {
-      dispatch(setError(err?.message || 'Signup failed'));
+      const user = await signup(signupData.email, signupData.password, signupData.name);
+
+      // Create Firestore user profile doc
+      await setDoc(doc(db, 'users', user.uid), {
+        name: signupData.name,
+        email: signupData.email,
+        role: signupData.role || 'patient',
+        createdAt: new Date().toISOString(),
+      });
+
+      const token = await user.getIdToken();
+      setCookie('token', token, { path: '/' });
+
+      dispatch(loginUser({ uid: user.uid, email: user.email, displayName: user.displayName }));
+      await dispatch(fetchUserDataAction(user.uid));
+
+      return user;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Signup failed';
+      dispatch(setAuthError(message));
+      throw error;
     } finally {
-      dispatch(setLoading(false));
+      dispatch(setAuthLoading(false));
     }
   };
-};
 
-const logInUser = (userData: UserData) => {
-  return async (dispatch: any) => {
-    dispatch(setLoading(true));
+/**
+ * Thunk action to log in an existing user with email & password.
+ */
+export const loginUserAction =
+  (credentials: LoginCredentials) => async (dispatch: AppDispatch) => {
     try {
-      const user = await login(userData.email, userData.password || '');
-      if (user) {
-        const token = await user.getIdToken();
-        setCookie('token', token);
-        dispatch(setUser({ uid: user.uid, email: user.email, displayName: user.displayName }));
-      }
-    } catch (err: any) {
-      dispatch(setError(err?.message || 'Login failed'));
+      dispatch(setAuthLoading(true));
+      dispatch(setAuthError(null));
+
+      const user = await login(credentials.email, credentials.password);
+
+      const token = await user.getIdToken();
+      setCookie('token', token, { path: '/' });
+
+      dispatch(loginUser({ uid: user.uid, email: user.email, displayName: user.displayName }));
+      await dispatch(fetchUserDataAction(user.uid));
+
+      return user;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Login failed';
+      dispatch(setAuthError(message));
+      throw error;
     } finally {
-      dispatch(setLoading(false));
+      dispatch(setAuthLoading(false));
     }
   };
+
+/**
+ * Thunk action to log out - clears cookies and Redux state.
+ */
+export const logoutUserAction = () => async (dispatch: AppDispatch) => {
+  try {
+    dispatch(setAuthLoading(true));
+    dispatch(setAuthError(null));
+
+    await logout();
+    deleteCookie('token', { path: '/' });
+
+    dispatch(logoutUser());
+    dispatch(clearUser());
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Logout failed';
+    dispatch(setAuthError(message));
+    throw error;
+  } finally {
+    dispatch(setAuthLoading(false));
+  }
 };
 
-const logOutUser = () => {
-  return async (dispatch: any) => {
-    dispatch(setLoading(true));
-    try {
-      await logout();
-      deleteCookie('token');
-      dispatch(clearAuth());
-    } catch (err: any) {
-      dispatch(setError(err?.message || 'Logout failed'));
-    } finally {
-      dispatch(setLoading(false));
-    }
-  };
+/**
+ * Thunk action to sign in / sign up via Google OAuth popup.
+ * Creates Firestore profile doc on first sign-in (role defaults to 'patient').
+ */
+export const googleSignInAction = () => async (dispatch: AppDispatch) => {
+  try {
+    dispatch(setAuthLoading(true));
+    dispatch(setAuthError(null));
+
+    const user = await signInWithGoogle();
+
+    const token = await user.getIdToken();
+    setCookie('token', token, { path: '/' });
+
+    dispatch(loginUser({ uid: user.uid, email: user.email, displayName: user.displayName }));
+    await dispatch(fetchUserDataAction(user.uid));
+
+    return user;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Google sign-in failed';
+    dispatch(setAuthError(message));
+    throw error;
+  } finally {
+    dispatch(setAuthLoading(false));
+  }
 };
 
-const googleSignIn = () => {
-  return async (dispatch: any) => {
-    dispatch(setLoading(true));
+/**
+ * Thunk action to send a password reset email.
+ */
+export const sendPasswordResetAction =
+  (email: string) => async (dispatch: AppDispatch) => {
     try {
-      const user = await signInWithGoogle();
-      if (user) {
-        const token = await user.getIdToken();
-        setCookie('token', token);
-        dispatch(setUser({ uid: user.uid, email: user.email, displayName: user.displayName }));
-      }
-    } catch (err: any) {
-      dispatch(setError(err?.message || 'Google sign-in failed'));
-    } finally {
-      dispatch(setLoading(false));
-    }
-  };
-};
+      dispatch(setAuthLoading(true));
+      dispatch(setAuthError(null));
 
-const sendPasswordReset = (email: string) => {
-  return async (dispatch: any) => {
-    dispatch(setLoading(true));
-    try {
       await forgotPassword(email);
-    } catch (err: any) {
-      dispatch(setError(err?.message || 'Password reset failed'));
+      dispatch(setRequestPasswordEmail(email));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Password reset failed';
+      dispatch(setAuthError(message));
+      throw error;
     } finally {
-      dispatch(setLoading(false));
+      dispatch(setAuthLoading(false));
     }
   };
-};
-
-export { signUpUser, logInUser, logOutUser, googleSignIn, sendPasswordReset };

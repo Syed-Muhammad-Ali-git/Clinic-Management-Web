@@ -2,17 +2,17 @@
 
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchAppointments } from '@/redux/actions/appointment-action/appointment-action';
-import type { RootState } from '@/redux/store';
+import { fetchAppointmentsAction } from '@/redux/actions/appointment-action/appointment-action';
+import type { AppDispatch, RootState } from '@/redux/store';
 import useRequireAuth from '@/lib/hooks/useRequireAuth';
 import Link from 'next/link';
 
 export default function AppointmentsList() {
   const { loading } = useRequireAuth();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch() as AppDispatch;
   const appointments = useSelector((state: RootState) => state.appointment.appointments);
 
-  useEffect(() => { dispatch<any>(fetchAppointments()); }, [dispatch]);
+  useEffect(() => { dispatch(fetchAppointmentsAction()); }, [dispatch]);
 
   if (loading) return <div className="p-8">Loading...</div>;
 

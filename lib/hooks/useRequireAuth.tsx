@@ -1,35 +1,29 @@
 "use client";
-import { useEffect, useState } from "react";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { auth, db } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { useRouter } from "next/navigation";
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/redux/store';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function useRequireAuth(requiredRoles: string[] = []) {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const authLoading = useSelector((state: RootState) => state.auth.loading);
+  const userRole = useSelector((state: RootState) => state.user.userData?.role);
+  const userLoading = useSelector((state: RootState) => state.user.loading);
+
+  const loading = authLoading || userLoading;
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      if (!u) {
-        router.push("/login");
-        return;
-      }
-      setUser(u);
-      if (requiredRoles.length) {
-        const snap = await getDoc(doc(db, "users", u.uid));
-        const role = snap.exists() ? (snap.data() as any).role : null;
-        if (!requiredRoles.includes(role)) {
-          router.push("/unauthorized");
-          return;
-        }
-      }
-      setLoading(false);
-    });
-    return () => unsub();
+    if (loading) return;
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    if (requiredRoles.length && userRole && !requiredRoles.includes(userRole)) {
+      router.push('/unauthorized');
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loading, isAuthenticated, userRole]);
 
-  return { loading, user };
+  return { loading };
 }

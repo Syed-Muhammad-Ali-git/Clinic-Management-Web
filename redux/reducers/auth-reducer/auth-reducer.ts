@@ -1,24 +1,60 @@
-// Auth reducer slices are defined here...!
+// Auth reducer - manages authentication state
 
-import { createSlice } from "@reduxjs/toolkit";
-const initialState = {
-  isAuthenticated: null,
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { AuthState, AuthUser } from '@/app/types/auth';
+
+const initialState: AuthState = {
+  isAuthenticated: false,
+  loginData: null,
+  userEmail: null,
+  loading: false,
+  error: null,
 };
 
 const authSlice = createSlice({
-  name: "auth",
-  initialState: initialState,
+  name: 'auth',
+  initialState,
   reducers: {
-    LOGIN_USER: (state, action) => {
-      console.log("User in redux: ", action.payload);
-      state.isAuthenticated = action.payload;
+    /** Set auth user after successful login/signup/google sign-in */
+    loginUser: (state, action: PayloadAction<AuthUser>) => {
+      state.isAuthenticated = true;
+      state.loginData = action.payload;
+      state.loading = false;
+      state.error = null;
     },
-
-    LOG_OUT_USER: (state, action) => {
-      state.isAuthenticated = null;
+    /** Clear auth state on logout */
+    logoutUser: (state) => {
+      state.isAuthenticated = false;
+      state.loginData = null;
+      state.loading = false;
+      state.error = null;
+    },
+    /** Store email used for password reset flow */
+    setRequestPasswordEmail: (state, action: PayloadAction<string>) => {
+      state.userEmail = action.payload;
+      state.loading = false;
+      state.error = null;
+    },
+    setAuthLoading: (state, action: PayloadAction<boolean>) => {
+      state.loading = action.payload;
+    },
+    setAuthError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload;
+      state.loading = false;
+    },
+    clearAuthError: (state) => {
+      state.error = null;
     },
   },
 });
 
-export const { LOGIN_USER, LOG_OUT_USER } = authSlice.actions;
+export const {
+  loginUser,
+  logoutUser,
+  setRequestPasswordEmail,
+  setAuthLoading,
+  setAuthError,
+  clearAuthError,
+} = authSlice.actions;
+
 export default authSlice.reducer;

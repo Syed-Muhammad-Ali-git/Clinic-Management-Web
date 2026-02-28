@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { signUpUser, googleSignIn } from '@/redux/actions/auth-action/auth-action';
+import { signupUserAction, googleSignInAction } from '@/redux/actions/auth-action/auth-action';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { RootState } from '@/redux/store';
@@ -25,12 +25,12 @@ export default function SignupPage() {
     if (password !== confirmPw) { setPwError('Passwords do not match'); return; }
     if (password.length < 6) { setPwError('Password must be at least 6 characters'); return; }
     setPwError('');
-    await dispatch<any>(signUpUser({ name, email, password }));
+    await dispatch<any>(signupUserAction({ name, email, password, role }));
     router.push('/dashboard');
   };
 
   const handleGoogle = async () => {
-    await dispatch<any>(googleSignIn());
+    await dispatch<any>(googleSignInAction());
     router.push('/dashboard');
   };
 
