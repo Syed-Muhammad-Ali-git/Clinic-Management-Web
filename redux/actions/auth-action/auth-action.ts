@@ -1,9 +1,9 @@
 // Centralized auth actions that call lib/auth helpers and update redux state
 import { signup, login, logout, signInWithGoogle, forgotPassword } from '@/lib/auth';
 import { db } from '@/lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { setUser, setLoading, setError, clearAuth } from '@/redux/slices/authSlice';
-import { setCookie, deleteCookie } from 'cookies-next';
+import { setCookie, deleteCookie } from 'cookies-next/client';
 
 interface UserData {
   name?: string;
