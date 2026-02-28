@@ -9,6 +9,7 @@ import {
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppDispatch, RootState } from "@/redux/store";
+import { toast } from "react-toastify";
 import {
   TextInput,
   PasswordInput,
@@ -73,15 +74,21 @@ export default function SignupPage() {
     const { confirmPassword, ...signupData } = values;
     try {
       await dispatch(signupUserAction(signupData));
+      toast.success("Account created! Welcome to ClinicAI!");
       router.push("/dashboard");
-    } catch (err) {}
+    } catch (err) {
+      toast.error("Signup failed. Please try again.");
+    }
   };
 
   const handleGoogle = async () => {
     try {
       await dispatch(googleSignInAction());
+      toast.success("Signed in with Google!");
       router.push("/dashboard");
-    } catch (err) {}
+    } catch (err) {
+      toast.error("Google sign-in failed. Please try again.");
+    }
   };
 
   return (

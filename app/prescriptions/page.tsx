@@ -1,198 +1,294 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import type { RootState } from '@/redux/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchPrescriptionsAction } from '@/redux/actions/prescription-action/prescription-action';
+import type { AppDispatch, RootState } from '@/redux/store';
 import useRequireAuth from '@/lib/hooks/useRequireAuth';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import Link from 'next/link';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
+import {
+  Box,
+  Text,
+  Title,
+  Button,
+  Loader,
+  Center,
+  Badge,
+  Stack,
+  Group,
+  TextInput,
+  Modal,
+  ScrollArea,
+  Divider,
+  rem,
+} from '@mantine/core';
+import type { Prescription } from '@/app/types/prescription';
 
-interface AiModalProps {
-  prescription: any;
+// ------------ AI Explain Modal ------------
+interface AiExplainModalProps {
+  prescription: Prescription | null;
+  opened: boolean;
   onClose: () => void;
 }
 
-function AiExplainModal({ prescription, onClose }: AiModalProps) {
-  const [explanation, setExplanation] = useState('');
-  const [loading, setLoading] = useState(true);
+function AiExplainModal({ prescription, opened, onClose }: AiExplainModalProps) {
+  const [explanation, setExplanation] = useState<string>('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetch_ = async () => {
-      try {
-        const res = await fetch('/api/ai/explain', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prescription }),
-        });
-        const data = await res.json();
-        setExplanation(data.explanation ?? 'No explanation available.');
-      } catch {
-        setExplanation('Unable to load AI explanation. Please try again later.');
-      } finally {
+    if (!opened || !prescription) return;
+    setExplanation('');
+    setLoading(true);
+    fetch('/api/ai/explain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prescription }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        setExplanation(data.explanation ?? data.error ?? 'No response from AI.');
         setLoading(false);
-      }
-    };
-    fetch_();
-  }, [prescription]);
+      })
+      .catch(() => {
+        setExplanation('Failed to get AI explanation.');
+        setLoading(false);
+        toast.error('AI explanation failed.');
+      });
+  }, [opened, prescription]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🤖</span>
-            <h2 className="text-lg font-bold text-gray-900">AI Explanation</h2>
-          </div>
-          <button onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition text-xl font-bold w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">
-            ✕
-          </button>
-        </div>
-
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
-          <p className="text-xs font-semibold text-blue-500 mb-1">Patient: {prescription.patientId}</p>
-          {prescription.meds?.map((m: any, i: number) => (
-            <p key={i} className="text-xs text-blue-700">💊 {m.name} — {m.dose}, {m.frequency}</p>
-          ))}
-        </div>
-
-        {loading ? (
-          <div className="flex items-center gap-3 py-6 justify-center">
-            <span className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
-            <span className="text-sm text-gray-500">Generating explanation...</span>
-          </div>
-        ) : (
-          <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto">
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="AI Prescription Explanation"
+      size="lg"
+      styles={{
+        header: { backgroundColor: '#0f172a', borderBottom: '1px solid rgba(255,255,255,0.08)' },
+        body: { backgroundColor: '#0f172a' },
+        content: { backgroundColor: '#0f172a' },
+        title: { color: '#e2e8f0', fontWeight: 600 },
+        close: { color: '#94a3b8' },
+      }}
+    >
+      {loading ? (
+        <Center py="xl">
+          <Stack align="center" gap="sm">
+            <Loader color="cyan" size="md" />
+            <Text c="dimmed" size="sm">Analyzing prescription...</Text>
+          </Stack>
+        </Center>
+      ) : (
+        <ScrollArea h={380}>
+          <Text size="sm" style={{ color: '#cbd5e1', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
             {explanation}
-          </div>
-        )}
-
-        <div className="mt-4 flex justify-end gap-2">
-          {!loading && (
-            <button
-              onClick={() => { navigator.clipboard.writeText(explanation); toast.success('Copied to clipboard'); }}
-              className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition">
-              📋 Copy
-            </button>
-          )}
-          <button onClick={onClose}
-            className="text-xs px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+          </Text>
+        </ScrollArea>
+      )}
+    </Modal>
   );
 }
 
+// ------------ Main Page ------------
 export default function PrescriptionsPage() {
-  const { loading } = useRequireAuth();
-  const user = useSelector((state: RootState) => state.auth.loginData);
-  const [prescriptions, setPrescriptions] = useState<any[]>([]);
-  const [fetching, setFetching] = useState(true);
-  const [aiTarget, setAiTarget] = useState<any | null>(null);
+  const { user } = useRequireAuth();
+  const dispatch = useDispatch<AppDispatch>();
+  const { prescriptions, loading, error } = useSelector((s: RootState) => s.prescription);
+
+  const [search, setSearch] = useState('');
+  const [aiPrescription, setAiPrescription] = useState<Prescription | null>(null);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+
+  const role = user?.role ?? '';
+  const canCreate = ['admin', 'doctor'].includes(role);
+  const isPatient = role === 'patient';
 
   useEffect(() => {
-    if (!user?.uid) return;
-    const load = async () => {
-      setFetching(true);
-      try {
-        const snap = await getDocs(query(collection(db, 'prescriptions'), orderBy('createdAt', 'desc')));
-        const arr: any[] = [];
-        snap.forEach((d) => arr.push({ id: d.id, ...d.data() }));
-        setPrescriptions(arr);
-      } catch {
-        toast.error('Failed to load prescriptions.');
-      } finally {
-        setFetching(false);
-      }
-    };
-    load();
-  }, [user?.uid]);
+    if (!user) return;
+    if (isPatient) {
+      dispatch(fetchPrescriptionsAction({ patientId: user.uid }));
+    } else if (role === 'doctor') {
+      dispatch(fetchPrescriptionsAction({ doctorId: user.uid }));
+    } else {
+      dispatch(fetchPrescriptionsAction());
+    }
+  }, [user, dispatch, isPatient, role]);
 
-  if (loading || fetching) return (
-    <div className="flex items-center justify-center h-64">
-      <span className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-    </div>
-  );
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
+
+  const filtered = prescriptions.filter((p) => {
+    const q = search.toLowerCase();
+    return (
+      p.patientName?.toLowerCase().includes(q) ||
+      p.doctorName?.toLowerCase().includes(q) ||
+      p.diagnosis?.toLowerCase().includes(q)
+    );
+  });
+
+  const openAi = (p: Prescription) => {
+    setAiPrescription(p);
+    setAiModalOpen(true);
+  };
 
   return (
-    <div>
-      <ToastContainer position="top-right" autoClose={3000} />
-      {aiTarget && <AiExplainModal prescription={aiTarget} onClose={() => setAiTarget(null)} />}
-
-      <div className="flex items-center justify-between mb-6">
+    <Box style={{ padding: rem(24) }}>
+      {/* Header */}
+      <Group justify="space-between" mb="lg" wrap="wrap" gap="sm">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Prescriptions</h1>
-          <p className="text-gray-500 text-sm mt-1">{prescriptions.length} total prescriptions</p>
+          <Title order={2} style={{ color: '#e2e8f0' }}>Prescriptions</Title>
+          <Text size="sm" c="dimmed" mt={4}>
+            {isPatient ? 'Your prescription history' : 'Manage patient prescriptions'}
+          </Text>
         </div>
-        <Link href="/prescriptions/create"
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">
-          ➕ New Prescription
-        </Link>
-      </div>
+        {canCreate && (
+          <Button
+            component={Link}
+            href="/prescriptions/create"
+            style={{ background: 'linear-gradient(135deg, #06b6d4, #3b82f6)' }}
+          >
+            + New Prescription
+          </Button>
+        )}
+      </Group>
 
-      {prescriptions.length ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {prescriptions.map((p: any) => (
-            <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <div className="font-semibold text-gray-900">{p.patientId}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">
-                    {p.createdAt?.seconds ? new Date(p.createdAt.seconds * 1000).toLocaleDateString() : '—'}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setAiTarget(p)}
-                    className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded hover:bg-purple-100 font-medium transition flex items-center gap-1">
-                    🤖 AI Explain
-                  </button>
-                  {p.pdfUrl && (
-                    <a href={p.pdfUrl} target="_blank" rel="noreferrer"
-                      className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 font-medium transition">
-                      📥 PDF
-                    </a>
-                  )}
-                </div>
-              </div>
+      {/* Search */}
+      <TextInput
+        placeholder="Search by patient, doctor, or diagnosis..."
+        value={search}
+        onChange={(e) => setSearch(e.currentTarget.value)}
+        mb="lg"
+        styles={{
+          input: {
+            backgroundColor: '#1e293b',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: '#e2e8f0',
+          },
+        }}
+      />
 
+      {/* Loading */}
+      {loading && (
+        <Center py="xl">
+          <Loader color="cyan" size="md" />
+        </Center>
+      )}
+
+      {/* Empty */}
+      {!loading && filtered.length === 0 && (
+        <Center py="xl">
+          <Stack align="center" gap="sm">
+            <Text size="xl" style={{ fontSize: rem(40) }}>Rx</Text>
+            <Text c="dimmed">No prescriptions found</Text>
+            {canCreate && (
+              <Button
+                component={Link}
+                href="/prescriptions/create"
+                variant="outline"
+                color="cyan"
+                size="sm"
+              >
+                Create first prescription
+              </Button>
+            )}
+          </Stack>
+        </Center>
+      )}
+
+      {/* Grid */}
+      {!loading && filtered.length > 0 && (
+        <Box
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+            gap: rem(16),
+          }}
+        >
+          {filtered.map((p) => (
+            <Box
+              key={p.id}
+              style={{
+                backgroundColor: '#1e293b',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: rem(12),
+                padding: rem(20),
+              }}
+            >
+              {/* Card Header */}
+              <Group justify="space-between" mb="sm">
+                <Badge color="cyan" variant="light">Rx</Badge>
+                <Text size="xs" c="dimmed">
+                  {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'N/A'}
+                </Text>
+              </Group>
+
+              {/* Patient / Doctor */}
+              <Text fw={600} style={{ color: '#e2e8f0' }} mb={4}>{p.patientName}</Text>
+              <Text size="sm" c="dimmed" mb={4}>Dr. {p.doctorName}</Text>
+              <Text size="sm" style={{ color: '#94a3b8' }} mb="sm">
+                Diagnosis: {p.diagnosis}
+              </Text>
+
+              <Divider color="rgba(255,255,255,0.06)" mb="sm" />
+
+              {/* Medications */}
+              <Text size="xs" fw={600} style={{ color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }} mb={6}>
+                Medications ({p.medications?.length ?? 0})
+              </Text>
+              <Stack gap={4} mb="sm">
+                {(p.medications ?? []).slice(0, 3).map((m, i) => (
+                  <Text key={i} size="sm" style={{ color: '#cbd5e1' }}>
+                    {m.name} — {m.dosage}, {m.frequency}
+                  </Text>
+                ))}
+                {(p.medications?.length ?? 0) > 3 && (
+                  <Text size="xs" c="dimmed">+{p.medications.length - 3} more</Text>
+                )}
+              </Stack>
+
+              {/* Notes */}
               {p.notes && (
-                <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                  <div className="text-xs font-semibold text-gray-500 mb-1">Notes</div>
-                  <div className="text-sm text-gray-700">{p.notes}</div>
-                </div>
+                <Text size="xs" c="dimmed" mb="sm" style={{ fontStyle: 'italic' }}>
+                  Note: {p.notes}
+                </Text>
               )}
 
-              {p.meds?.length ? (
-                <div>
-                  <div className="text-xs font-semibold text-gray-500 mb-1">Medications ({p.meds.length})</div>
-                  <div className="space-y-1">
-                    {p.meds.map((m: any, i: number) => (
-                      <div key={i} className="text-xs text-gray-600 bg-blue-50 rounded px-2 py-1">
-                        💊 {m.name} — {m.dose} — {m.frequency}
-                        {m.duration && <span className="text-gray-400"> · {m.duration}</span>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
+              {/* Actions */}
+              <Group gap="sm" mt="sm">
+                {p.pdfUrl && (
+                  <Button
+                    component="a"
+                    href={p.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    size="xs"
+                    variant="outline"
+                    color="gray"
+                  >
+                    View PDF
+                  </Button>
+                )}
+                <Button
+                  size="xs"
+                  variant="light"
+                  color="violet"
+                  onClick={() => openAi(p)}
+                >
+                  AI Explain
+                </Button>
+              </Group>
+            </Box>
           ))}
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm">
-          <p className="text-4xl mb-3">💊</p>
-          <p className="text-gray-500 text-sm">No prescriptions found</p>
-          <Link href="/prescriptions/create" className="mt-4 inline-block text-blue-600 text-sm hover:underline">
-            Create first prescription →
-          </Link>
-        </div>
+        </Box>
       )}
-    </div>
+
+      {/* AI Modal */}
+      <AiExplainModal
+        prescription={aiPrescription}
+        opened={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+      />
+    </Box>
   );
 }

@@ -79,11 +79,13 @@ export default function PatientDashboard() {
         {upcoming.length ? (
           <div className="space-y-3">
             {upcoming.map((a: Appointment) => {
-              const t = a.scheduledAt?.seconds
-                ? new Date(a.scheduledAt.seconds * 1000)
-                : a.scheduledAt
-                  ? new Date(a.scheduledAt)
-                  : null;
+              const raw = a.scheduledAt as unknown as { seconds?: number } | string | undefined;
+              const t =
+                raw && typeof raw === 'object' && raw.seconds
+                  ? new Date(raw.seconds * 1000)
+                  : raw
+                    ? new Date(raw as string)
+                    : null;
               return (
                 <div
                   key={a.id}

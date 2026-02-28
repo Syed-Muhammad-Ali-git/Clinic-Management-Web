@@ -10,6 +10,7 @@ import {
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppDispatch, RootState } from "@/redux/store";
+import { toast } from "react-toastify";
 import {
   TextInput,
   PasswordInput,
@@ -66,24 +67,31 @@ export default function LoginPage() {
     }
     try {
       await dispatch(loginUserAction(values));
+      toast.success("Welcome back! Redirecting...");
       router.push("/dashboard");
     } catch (err) {
-      // Error handled by redux
+      toast.error("Login failed. Check your credentials.");
     }
   };
 
   const handleGoogle = async () => {
     try {
       await dispatch(googleSignInAction());
+      toast.success("Signed in with Google!");
       router.push("/dashboard");
-    } catch (err) {}
+    } catch (err) {
+      toast.error("Google sign-in failed. Please try again.");
+    }
   };
 
   const handleForgot = async (values: typeof forgotForm.values) => {
     try {
       await dispatch(sendPasswordResetAction(values.email));
+      toast.success("Password reset email sent! Check your inbox.");
       setResetSent(true);
-    } catch (err) {}
+    } catch (err) {
+      toast.error("Failed to send reset email. Please try again.");
+    }
   };
 
   return (
@@ -297,7 +305,7 @@ export default function LoginPage() {
                 }}
                 className="flex items-center gap-1 self-start hover:text-white transition"
               >
-                <ChevronLeft size={16} /> Back to Sign In
+                <ChevronLeft size={16} /> <div>Back to Sign in</div>
               </Anchor>
               <Title
                 order={2}

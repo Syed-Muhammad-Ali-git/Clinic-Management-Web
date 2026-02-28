@@ -2,27 +2,30 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const PROTECTED_ROUTES = ['/dashboard', '/patients', '/appointments', '/prescriptions', '/ai'];
+const AUTH_ROUTES = ['/login', '/signup'];
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('clinic-auth-token')?.value;
   const { pathname } = request.nextUrl;
 
   const isProtectedRoute = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
+  const isAuthRoute = AUTH_ROUTES.some((route) => pathname === route);
   const isRootPath = pathname === '/';
 
+  // Not logged in → redirect to login for protected routes
   if ((isProtectedRoute || isRootPath) && !token) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
-  
-  if (pathname === '/login') {
-    if (token) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
+
+  // Already logged in → redirect away from login / signup / root
+  if ((isAuthRoute || isRootPath) && token) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
-  
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
+

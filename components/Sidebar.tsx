@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { logoutUserAction } from "@/redux/actions/auth-action/auth-action";
 import type { AppDispatch, RootState } from "@/redux/store";
+import { toast } from "react-toastify";
 import {
   Box,
   Stack,
@@ -95,8 +96,11 @@ export default function Sidebar({ role, open, onClose }: SidebarProps) {
   const handleLogout = async () => {
     try {
       await dispatch(logoutUserAction());
+      toast.success("Signed out successfully!");
       router.push("/login");
-    } catch (err) {}
+    } catch (err) {
+      toast.error("Logout failed. Please try again.");
+    }
   };
 
   const links = navItems.map((item) => {
@@ -152,25 +156,20 @@ export default function Sidebar({ role, open, onClose }: SidebarProps) {
 
       <Box
         component="aside"
-        style={(theme: MantineTheme) => ({
+        className={[
+          // always visible on desktop, slide on mobile
+          "fixed top-0 left-0 z-50 transition-transform duration-300 ease-in-out",
+          "md:static md:translate-x-0 md:block",
+          open ? "translate-x-0" : "-translate-x-full",
+        ].join(" ")}
+        style={{
           width: rem(280),
           height: "100vh",
           backgroundColor: "#0a0f1e",
           borderRight: "1px solid rgba(255, 255, 255, 0.05)",
           display: "flex",
           flexDirection: "column",
-          position: "fixed",
-          top: 0,
-          left: 0,
-          zIndex: 50,
-          transition: "transform 0.3s ease",
-          transform: open ? "translateX(0)" : "translateX(-100%)",
-
-          "@media (min-width: 768px)": {
-            position: "static",
-            transform: "none",
-          },
-        })}
+        }}
       >
         {/* Header */}
         <Box p="xl" pb="lg">

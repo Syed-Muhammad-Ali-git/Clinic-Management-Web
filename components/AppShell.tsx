@@ -3,7 +3,9 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import Sidebar from "@/components/Sidebar";
+import GlobalLoader from "@/components/GlobalLoader";
 import type { RootState } from "@/redux/store";
+import { toast } from "react-toastify";
 import {
   Box,
   Group,
@@ -53,8 +55,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const handleLogout = async () => {
     try {
       await (dispatch as any)(logoutUserAction());
+      toast.success("Signed out successfully!");
       router.push("/login");
-    } catch (err) {}
+    } catch (err) {
+      toast.error("Logout failed. Please try again.");
+    }
   };
 
   return (
@@ -66,6 +71,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         backgroundColor: "#f8fafc",
       }}
     >
+      <GlobalLoader />
       <Sidebar
         role={role}
         open={sidebarOpen}
