@@ -16,9 +16,16 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_APP_MEASUREMENT_ID,
 };
 
-// Initialize Firebase - only on client side
-const app =
-  getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+// Initialize Firebase — guard against missing env vars during SSR/static build
+let app: ReturnType<typeof initializeApp>;
+if (getApps().length > 0) {
+  app = getApps()[0];
+} else if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+  app = initializeApp(firebaseConfig);
+} else {
+  // Fallback for SSR/build when env vars are not yet available
+  app = initializeApp({ projectId: 'placeholder', apiKey: 'placeholder', appId: 'placeholder' });
+}
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
