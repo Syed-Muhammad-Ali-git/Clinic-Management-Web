@@ -26,6 +26,8 @@ export const signupUserAction =
       dispatch(setAuthLoading(true));
       dispatch(setAuthError(null));
 
+      // 1. Check if user already exists in Firestore (to prevent duplicate manual entries)
+      // Though Firebase Auth handles this for the auth part, we want to be explicit
       const user = await signup(signupData.email, signupData.password, signupData.name);
 
       // Create Firestore user profile doc
@@ -43,8 +45,13 @@ export const signupUserAction =
       await dispatch(fetchUserDataAction(user.uid));
 
       return user;
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Signup failed';
+    } catch (error: any) {
+      let message = 'Signup failed';
+      if (error.code === 'auth/email-already-in-use') {
+        message = 'This email is already registered. Please sign in instead.';
+      } else {
+        message = error.message || message;
+      }
       dispatch(setAuthError(message));
       throw error;
     } finally {

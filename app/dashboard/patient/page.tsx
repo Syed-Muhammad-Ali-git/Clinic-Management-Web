@@ -2,8 +2,9 @@
 
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAppointmentsAction } from '@/redux/actions/appointment-action/appointment-action';
+import { fetchAppointmentsAction } from "@/redux/actions/appointment-action/appointment-action";
 import type { AppDispatch, RootState } from "@/redux/store";
+import type { Appointment } from "@/app/types/appointment";
 import Link from "next/link";
 
 export default function PatientDashboard() {
@@ -18,9 +19,11 @@ export default function PatientDashboard() {
   }, [dispatch, user?.uid]);
 
   const upcoming = appointments.filter(
-    (a: any) => a.status !== "completed" && a.status !== "cancelled",
+    (a: Appointment) => a.status !== "completed" && a.status !== "cancelled",
   );
-  const completed = appointments.filter((a: any) => a.status === "completed");
+  const completed = appointments.filter(
+    (a: Appointment) => a.status === "completed",
+  );
 
   return (
     <div>
@@ -75,7 +78,7 @@ export default function PatientDashboard() {
         </h2>
         {upcoming.length ? (
           <div className="space-y-3">
-            {upcoming.map((a: any) => {
+            {upcoming.map((a: Appointment) => {
               const t = a.scheduledAt?.seconds
                 ? new Date(a.scheduledAt.seconds * 1000)
                 : a.scheduledAt

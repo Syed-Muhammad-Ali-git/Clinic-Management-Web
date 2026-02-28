@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   loginUserAction,
@@ -9,7 +9,7 @@ import {
 } from "@/redux/actions/auth-action/auth-action";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { AppDispatch, RootState } from "@/redux/store";
+import { AppDispatch, RootState } from "@/redux/store";
 import {
   TextInput,
   PasswordInput,
@@ -26,7 +26,7 @@ import {
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { z } from "zod";
-import { Stethoscope, LogIn, Mail } from "lucide-react";
+import { Stethoscope, LogIn, Mail, ChevronLeft } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -34,9 +34,9 @@ const loginSchema = z.object({
 });
 
 export default function LoginPage() {
-  const [showForgot, setShowForgot] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
-  const dispatch: AppDispatch = useDispatch();
+  const [showForgot, setShowForgot] = React.useState(false);
+  const [resetSent, setResetSent] = React.useState(false);
+  const dispatch = useDispatch() as AppDispatch;
   const router = useRouter();
   const loading = useSelector((state: RootState) => state.auth.loading);
   const error = useSelector((state: RootState) => state.auth.error);
@@ -64,45 +64,69 @@ export default function LoginPage() {
       });
       return;
     }
-    await dispatch(loginUserAction(values) as any);
-    router.push("/dashboard");
+    try {
+      await dispatch(loginUserAction(values));
+      router.push("/dashboard");
+    } catch (err) {
+      // Error handled by redux
+    }
   };
 
   const handleGoogle = async () => {
-    await dispatch(googleSignInAction() as any);
-    router.push("/dashboard");
+    try {
+      await dispatch(googleSignInAction());
+      router.push("/dashboard");
+    } catch (err) {}
   };
 
   const handleForgot = async (values: typeof forgotForm.values) => {
-    await dispatch(sendPasswordResetAction(values.email) as any);
-    setResetSent(true);
+    try {
+      await dispatch(sendPasswordResetAction(values.email));
+      setResetSent(true);
+    } catch (err) {}
   };
 
   return (
-    <Box className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Container size={420} my={40}>
+    <Box
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        background:
+          "radial-gradient(circle at center, #0a0f1e 0%, #050811 100%)",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Animated background elements */}
+      <Box className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 rounded-full blur-[120px] animate-pulse" />
+      <Box className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-blue-600/10 rounded-full blur-[100px]" />
+
+      <Container size={600} className="relative z-10 w-full px-4">
         <Stack align="center" gap="xs" mb={30}>
-          <Box className="w-16 h-16 bg-gradient-to-br from-cyan-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
+          <Box className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl shadow-cyan-500/20 rotate-3">
             <Stethoscope size={32} color="white" />
           </Box>
           <Title
             order={1}
             size="h2"
             fw={900}
-            className="tracking-tight text-gray-900"
+            className="text-white tracking-tight"
           >
             ClinicAI
           </Title>
-          <Text color="dimmed" size="sm">
-            Medical Management System
+          <Text color="gray.5" size="sm">
+            Intelligent Clinic Management
           </Text>
         </Stack>
 
         <Paper
-          withBorder
-          shadow="0 4px 24px rgba(6, 182, 212, 0.08)"
-          p={30}
-          radius="md"
+          radius="lg"
+          p={35}
+          style={{
+            backgroundColor: "rgba(255, 255, 255, 0.03)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+          }}
         >
           {!showForgot ? (
             <>
@@ -110,19 +134,23 @@ export default function LoginPage() {
                 order={2}
                 size="h3"
                 fw={700}
-                mb={20}
-                className="text-gray-800"
+                mb={25}
+                className="text-white"
               >
-                Welcome back
+                Sign In
               </Title>
 
               {error && (
                 <Text
-                  color="red"
+                  color="red.4"
                   size="sm"
-                  mb={15}
-                  p="xs"
-                  className="bg-red-50 border border-red-100 rounded"
+                  mb={20}
+                  p="md"
+                  style={{
+                    backgroundColor: "rgba(239, 68, 68, 0.1)",
+                    border: "1px solid rgba(239, 68, 68, 0.2)",
+                    borderRadius: "8px",
+                  }}
                 >
                   {error}
                 </Text>
@@ -131,21 +159,44 @@ export default function LoginPage() {
               <form onSubmit={form.onSubmit(handleLogin)}>
                 <Stack gap="md">
                   <TextInput
-                    label="Email address"
+                    label={
+                      <Text color="gray.4" size="sm" fw={500}>
+                        Email Address
+                      </Text>
+                    }
                     placeholder="doctor@clinic.com"
                     required
                     size="md"
-                    radius="md"
+                    styles={{
+                      input: {
+                        backgroundColor: "rgba(255, 255, 255, 0.05)",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        color: "white",
+                        "&:focus": { borderColor: "#06b6d4" },
+                      },
+                    }}
                     {...form.getInputProps("email")}
                   />
 
                   <Stack gap={5}>
                     <PasswordInput
-                      label="Password"
+                      label={
+                        <Text color="gray.4" size="sm" fw={500}>
+                          Password
+                        </Text>
+                      }
                       placeholder="Enter your password"
                       required
                       size="md"
-                      radius="md"
+                      styles={{
+                        input: {
+                          backgroundColor: "rgba(255, 255, 255, 0.05)",
+                          border: "1px solid rgba(255, 255, 255, 0.1)",
+                          color: "white",
+                          "&:focus": { borderColor: "#06b6d4" },
+                        },
+                        innerInput: { color: "white" },
+                      }}
                       {...form.getInputProps("password")}
                     />
                     <Group justify="flex-end">
@@ -154,7 +205,7 @@ export default function LoginPage() {
                         type="button"
                         size="xs"
                         fw={600}
-                        color="cyan"
+                        color="cyan.4"
                         onClick={() => setShowForgot(true)}
                       >
                         Forgot password?
@@ -168,24 +219,39 @@ export default function LoginPage() {
                     size="lg"
                     radius="md"
                     variant="gradient"
-                    gradient={{ from: "cyan.6", to: "blue.7" }}
+                    gradient={{ from: "cyan.5", to: "blue.6" }}
                     loading={loading}
                     leftSection={<LogIn size={18} />}
+                    className="mt-4 shadow-lg shadow-cyan-500/20"
                   >
-                    Sign in
+                    Enter System
                   </Button>
                 </Stack>
               </form>
 
-              <Divider label="OR" labelPosition="center" my="lg" />
+              <Divider
+                label="OR"
+                labelPosition="center"
+                my="xl"
+                styles={{
+                  label: { color: "rgba(255, 255, 255, 0.3)" },
+                }}
+              />
 
               <Button
-                variant="default"
+                variant="outline"
+                color="gray.4"
                 fullWidth
                 size="md"
                 radius="md"
                 onClick={handleGoogle}
                 disabled={loading}
+                styles={{
+                  root: {
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.05)" },
+                  },
+                }}
                 leftSection={
                   <Box className="w-5 h-5 flex items-center">
                     <svg viewBox="0 0 24 24">
@@ -212,10 +278,10 @@ export default function LoginPage() {
                 Continue with Google
               </Button>
 
-              <Text ta="center" mt="xl" size="sm">
-                Don&apos;t have an account?{" "}
-                <Anchor component={Link} href="/signup" fw={700} color="cyan">
-                  Create account
+              <Text ta="center" mt="xl" size="sm" color="gray.5">
+                New to ClinicAI?{" "}
+                <Anchor component={Link} href="/signup" fw={700} color="cyan.4">
+                  Register Account
                 </Anchor>
               </Text>
             </>
@@ -224,40 +290,62 @@ export default function LoginPage() {
               <Anchor
                 component="button"
                 size="sm"
-                color="gray"
+                color="gray.5"
                 onClick={() => {
                   setShowForgot(false);
                   setResetSent(false);
                 }}
-                className="flex items-center gap-1 self-start"
+                className="flex items-center gap-1 self-start hover:text-white transition"
               >
-                ← Back to login
+                <ChevronLeft size={16} /> Back to Sign In
               </Anchor>
-              <Title order={2} size="h3" fw={700} className="text-gray-800">
-                Reset password
+              <Title
+                order={2}
+                size="h3"
+                fw={700}
+                mt="lg"
+                className="text-white"
+              >
+                Reset Password
               </Title>
-              <Text size="sm" color="dimmed">
-                Enter your email and we&apos;ll send a reset link.
+              <Text size="sm" color="gray.5">
+                Enter your email and we'll send a recovery link.
               </Text>
 
               {resetSent ? (
                 <Text
                   ta="center"
-                  py="lg"
+                  py="xl"
                   size="sm"
-                  className="bg-green-50 text-green-700 border border-green-100 rounded-md"
+                  style={{
+                    backgroundColor: "rgba(34, 197, 94, 0.1)",
+                    border: "1px solid rgba(34, 197, 94, 0.2)",
+                    borderRadius: "8px",
+                    color: "#4ade80",
+                  }}
                 >
-                  ✅ Reset link sent! Check your inbox.
+                  ✅ Recovery email sent! Check your inbox.
                 </Text>
               ) : (
                 <form onSubmit={forgotForm.onSubmit(handleForgot)}>
                   <Stack gap="md">
                     <TextInput
-                      label="Email address"
+                      label={
+                        <Text color="gray.4" size="sm" fw={500}>
+                          Email Address
+                        </Text>
+                      }
                       placeholder="your@email.com"
                       required
                       size="md"
-                      radius="md"
+                      styles={{
+                        input: {
+                          backgroundColor: "rgba(255, 255, 255, 0.05)",
+                          border: "1px solid rgba(255, 255, 255, 0.1)",
+                          color: "white",
+                          "&:focus": { borderColor: "#06b6d4" },
+                        },
+                      }}
                       {...forgotForm.getInputProps("email")}
                     />
                     <Button
@@ -268,8 +356,9 @@ export default function LoginPage() {
                       color="cyan"
                       loading={loading}
                       leftSection={<Mail size={18} />}
+                      className="mt-4"
                     >
-                      Send reset link
+                      Send Reset Link
                     </Button>
                   </Stack>
                 </form>

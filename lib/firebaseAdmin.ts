@@ -26,8 +26,5 @@ export function getAdminStorage(): admin.storage.Storage {
 
 /** @deprecated Use getAdminStorage().bucket() instead */
 export const adminStorage = {
-  get file() {
-    return getAdminStorage().bucket().file.bind(getAdminStorage().bucket());
-  },
   file: (path: string) => getAdminStorage().bucket().file(path),
 };

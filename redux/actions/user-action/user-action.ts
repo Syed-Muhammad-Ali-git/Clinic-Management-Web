@@ -1,14 +1,14 @@
 // User actions - Firestore user profile API calls live here
 
-import { AppDispatch } from '@/redux/store';
+import { AppDispatch } from "@/redux/store";
 import {
   setUserData,
   setUserLoading,
   setUserError,
-} from '@/redux/reducers/user-reducer/user-reducer';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { UserProfile } from '@/app/types/user';
+} from "@/redux/reducers/user-reducer/user-reducer";
+import { db } from "@/lib/firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { UserProfile } from "@/app/types/user";
 
 /**
  * Thunk action to fetch the logged-in user's Firestore profile.
@@ -20,14 +20,19 @@ export const fetchUserDataAction =
       dispatch(setUserLoading(true));
       dispatch(setUserError(null));
 
-      const snap = await getDoc(doc(db, 'users', uid));
+      const snap = await getDoc(doc(db, "users", uid));
       if (snap.exists()) {
         const profile = { uid: snap.id, ...snap.data() } as UserProfile;
         dispatch(setUserData(profile));
         return profile;
+      } else {
+        // Essential: dispatch null if no doc found to stop infinite loading spinners
+        dispatch(setUserData(null));
+        return null;
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch user data';
+      const message =
+        error instanceof Error ? error.message : "Failed to fetch user data";
       dispatch(setUserError(message));
       throw error;
     } finally {
@@ -45,10 +50,11 @@ export const updateUserProfileAction =
       dispatch(setUserLoading(true));
       dispatch(setUserError(null));
 
-      await setDoc(doc(db, 'users', uid), updates, { merge: true });
+      await setDoc(doc(db, "users", uid), updates, { merge: true });
       await dispatch(fetchUserDataAction(uid));
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to update profile';
+      const message =
+        error instanceof Error ? error.message : "Failed to update profile";
       dispatch(setUserError(message));
       throw error;
     } finally {

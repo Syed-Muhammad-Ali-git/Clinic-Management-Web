@@ -1,41 +1,69 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useDispatch, useSelector } from 'react-redux';
-import { logoutUserAction } from '@/redux/actions/auth-action/auth-action';
-import type { AppDispatch, RootState } from '@/redux/store';
+import React from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { logoutUserAction } from "@/redux/actions/auth-action/auth-action";
+import type { AppDispatch, RootState } from "@/redux/store";
+import {
+  Box,
+  Stack,
+  Text,
+  UnstyledButton,
+  Group,
+  ThemeIcon,
+  Divider,
+  ScrollArea,
+  Badge,
+  Transition,
+  rem,
+  MantineTheme,
+} from "@mantine/core";
+import {
+  LayoutDashboard,
+  Users,
+  Calendar,
+  Pill,
+  LogOut,
+  Stethoscope,
+  UserCircle,
+  ChevronRight,
+  BrainCircuit,
+} from "lucide-react";
 
-const NAV: Record<string, { label: string; icon: string; href: string }[]> = {
+const NAV: Record<string, { label: string; icon: any; href: string }[]> = {
   admin: [
-    { label: 'Dashboard', icon: '📊', href: '/dashboard' },
-    { label: 'Patients', icon: '👥', href: '/patients' },
-    { label: 'Appointments', icon: '📅', href: '/appointments' },
-    { label: 'Prescriptions', icon: '💊', href: '/prescriptions' },
+    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { label: "Patients", icon: Users, href: "/patients" },
+    { label: "Appointments", icon: Calendar, href: "/appointments" },
+    { label: "Prescriptions", icon: Pill, href: "/prescriptions" },
+    { label: "AI Diagnostic", icon: BrainCircuit, href: "/ai" },
   ],
   doctor: [
-    { label: 'Dashboard', icon: '📊', href: '/dashboard' },
-    { label: 'Patients', icon: '👥', href: '/patients' },
-    { label: 'Appointments', icon: '📅', href: '/appointments' },
-    { label: 'Prescriptions', icon: '💊', href: '/prescriptions' },
+    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { label: "Patients", icon: Users, href: "/patients" },
+    { label: "Appointments", icon: Calendar, href: "/appointments" },
+    { label: "Prescriptions", icon: Pill, href: "/prescriptions" },
+    { label: "AI Diagnostic", icon: BrainCircuit, href: "/ai" },
   ],
   receptionist: [
-    { label: 'Dashboard', icon: '📊', href: '/dashboard' },
-    { label: 'Patients', icon: '👥', href: '/patients' },
-    { label: 'Appointments', icon: '📅', href: '/appointments' },
+    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { label: "Patients", icon: Users, href: "/patients" },
+    { label: "Appointments", icon: Calendar, href: "/appointments" },
   ],
   patient: [
-    { label: 'Dashboard', icon: '📊', href: '/dashboard' },
-    { label: 'My Appointments', icon: '📅', href: '/appointments' },
-    { label: 'My Prescriptions', icon: '💊', href: '/prescriptions' },
+    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { label: "My Appointments", icon: Calendar, href: "/appointments" },
+    { label: "My Prescriptions", icon: Pill, href: "/prescriptions" },
   ],
 };
 
-const ROLE_COLORS: Record<string, string> = {
-  admin: 'bg-red-100 text-red-700',
-  doctor: 'bg-blue-100 text-blue-700',
-  receptionist: 'bg-purple-100 text-purple-700',
-  patient: 'bg-green-100 text-green-700',
+const ROLE_CONFIG: Record<string, { color: string; label: string }> = {
+  admin: { color: "red.6", label: "Administrator" },
+  doctor: { color: "cyan.6", label: "Doctor" },
+  receptionist: { color: "grape.6", label: "Receptionist" },
+  patient: { color: "teal.6", label: "Patient" },
 };
 
 interface SidebarProps {
@@ -52,94 +80,215 @@ export default function Sidebar({ role, open, onClose }: SidebarProps) {
   const loginData = useSelector((state: RootState) => state.auth.loginData);
 
   const navItems = NAV[role] || NAV.patient;
+  const roleInfo = ROLE_CONFIG[role] || ROLE_CONFIG.patient;
 
-  const displayName = userData?.name || loginData?.displayName || loginData?.email || 'User';
+  const displayName =
+    userData?.name || loginData?.displayName || loginData?.email || "User";
   const initials = displayName
-    .split(' ')
+    .split(" ")
+    .filter(Boolean)
     .map((n: string) => n[0])
-    .join('')
+    .join("")
     .toUpperCase()
     .slice(0, 2);
 
   const handleLogout = async () => {
-    await dispatch(logoutUserAction());
-    router.push('/login');
+    try {
+      await dispatch(logoutUserAction());
+      router.push("/login");
+    } catch (err) {}
   };
+
+  const links = navItems.map((item) => {
+    const isActive =
+      pathname === item.href ||
+      (item.href !== "/dashboard" && pathname.startsWith(item.href));
+    return (
+      <UnstyledButton
+        key={item.label}
+        component={Link}
+        href={item.href}
+        onClick={onClose}
+        style={(theme: MantineTheme) => ({
+          display: "block",
+          width: "100%",
+          padding: `${rem(10)} ${rem(12)}`,
+          borderRadius: theme.radius.md,
+          color: isActive ? theme.white : theme.colors.gray[5],
+          backgroundColor: isActive ? theme.colors.cyan[6] : "transparent",
+          transition: "all 0.2s ease",
+
+          "&:hover": {
+            backgroundColor: isActive
+              ? theme.colors.cyan[7]
+              : "rgba(255, 255, 255, 0.05)",
+            color: theme.white,
+            transform: "translateX(4px)",
+          },
+        })}
+      >
+        <Group justify="space-between" wrap="nowrap">
+          <Group gap="sm">
+            <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+            <Text size="sm" fw={isActive ? 600 : 500}>
+              {item.label}
+            </Text>
+          </Group>
+          {isActive && <ChevronRight size={14} />}
+        </Group>
+      </UnstyledButton>
+    );
+  });
 
   return (
     <>
       {/* Mobile overlay */}
       {open && (
-        <div className="fixed inset-0 bg-black/40 z-20 md:hidden" onClick={onClose} />
+        <Box
+          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
+          onClick={onClose}
+        />
       )}
 
-      <aside
-        className={`
-          fixed md:static inset-y-0 left-0 z-30 w-64 bg-[#1e2a3a] text-white
-          flex flex-col shrink-0 h-screen transition-transform duration-300
-          ${open ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
-        `}
+      <Box
+        component="aside"
+        style={(theme: MantineTheme) => ({
+          width: rem(280),
+          height: "100vh",
+          backgroundColor: "#0a0f1e",
+          borderRight: "1px solid rgba(255, 255, 255, 0.05)",
+          display: "flex",
+          flexDirection: "column",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          zIndex: 50,
+          transition: "transform 0.3s ease",
+          transform: open ? "translateX(0)" : "translateX(-100%)",
+
+          "@media (min-width: 768px)": {
+            position: "static",
+            transform: "none",
+          },
+        })}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
-          <div className="w-9 h-9 bg-blue-500 rounded-xl flex items-center justify-center text-lg shrink-0">
-            🏥
-          </div>
-          <div>
-            <div className="font-bold text-base leading-tight">ClinicAI</div>
-            <div className="text-xs text-gray-400">Medical System</div>
-          </div>
-        </div>
-
-        {/* Nav links */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                  ${isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                  }
-                `}
+        {/* Header */}
+        <Box p="xl" pb="lg">
+          <Group gap="md">
+            <ThemeIcon
+              size={42}
+              radius="lg"
+              variant="gradient"
+              gradient={{ from: "cyan.5", to: "blue.6" }}
+              style={{ boxShadow: "0 8px 20px -5px rgba(6, 182, 212, 0.5)" }}
+            >
+              <Stethoscope size={24} />
+            </ThemeIcon>
+            <Box>
+              <Text
+                fw={800}
+                size="xl"
+                color="white"
+                style={{ letterSpacing: "-0.5px", lineHeight: 1 }}
               >
-                <span className="text-base">{item.icon}</span>
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* User footer */}
-        <div className="border-t border-white/10 p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-sm font-bold shrink-0">
-              {initials}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-medium truncate">{displayName}</div>
-              <span
-                className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mt-0.5 ${
-                  ROLE_COLORS[role] || 'bg-gray-100 text-gray-700'
-                }`}
+                ClinicAI
+              </Text>
+              <Text
+                size="xs"
+                color="gray.6"
+                fw={600}
+                mt={4}
+                style={{ letterSpacing: "1px", textTransform: "uppercase" }}
               >
-                {role}
-              </span>
-            </div>
-          </div>
-          <button
+                Health System
+              </Text>
+            </Box>
+          </Group>
+        </Box>
+
+        <Divider mx="lg" color="rgba(255, 255, 255, 0.05)" />
+
+        {/* Navigation */}
+        <ScrollArea flex={1} px="md" py="xl">
+          <Stack gap={4}>
+            <Text
+              size="xs"
+              fw={700}
+              color="gray.7"
+              px="sm"
+              mb={8}
+              style={{ textTransform: "uppercase", letterSpacing: "1px" }}
+            >
+              Main Menu
+            </Text>
+            {links}
+          </Stack>
+        </ScrollArea>
+
+        {/* Footer */}
+        <Box
+          p="lg"
+          style={{
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+          }}
+        >
+          <Group gap="sm" mb="md" wrap="nowrap">
+            <Box
+              style={(theme: MantineTheme) => ({
+                width: rem(42),
+                height: rem(42),
+                borderRadius: theme.radius.md,
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+              })}
+            >
+              <Text fw={700} color="white">
+                {initials}
+              </Text>
+            </Box>
+            <Box style={{ flex: 1, minWidth: 0 }}>
+              <Text size="sm" fw={600} color="white" truncate>
+                {displayName}
+              </Text>
+              <Badge
+                size="xs"
+                variant="filled"
+                color={roleInfo.color}
+                radius="sm"
+                style={{ textTransform: "capitalize" }}
+              >
+                {roleInfo.label}
+              </Badge>
+            </Box>
+          </Group>
+
+          <UnstyledButton
             onClick={handleLogout}
-            className="w-full text-left text-sm text-gray-400 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg transition-colors"
+            style={(theme: MantineTheme) => ({
+              display: "flex",
+              alignItems: "center",
+              gap: theme.spacing.sm,
+              width: "100%",
+              padding: `${rem(8)} ${rem(12)}`,
+              borderRadius: theme.radius.md,
+              color: theme.colors.gray[6],
+              "&:hover": {
+                backgroundColor: "rgba(239, 68, 68, 0.1)",
+                color: theme.colors.red[5],
+              },
+            })}
           >
-            🚪 Logout
-          </button>
-        </div>
-      </aside>
+            <LogOut size={18} />
+            <Text size="sm" fw={600}>
+              Sign Out
+            </Text>
+          </UnstyledButton>
+        </Box>
+      </Box>
     </>
   );
 }

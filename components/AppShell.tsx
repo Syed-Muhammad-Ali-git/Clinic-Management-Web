@@ -1,56 +1,240 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
-import Sidebar from '@/components/Sidebar';
-import type { RootState } from '@/redux/store';
+import React, { useState } from "react";
+import { useSelector } from "react-redux";
+import Sidebar from "@/components/Sidebar";
+import type { RootState } from "@/redux/store";
+import {
+  Box,
+  Group,
+  Text,
+  ActionIcon,
+  Avatar,
+  Menu,
+  UnstyledButton,
+  rem,
+  Tooltip,
+  Badge,
+  Paper,
+  MantineTheme,
+} from "@mantine/core";
+import {
+  Menu as MenuIcon,
+  Bell,
+  Search,
+  Settings,
+  LogOut,
+  User,
+  ShieldCheck,
+  Stethoscope,
+} from "lucide-react";
+import { useDispatch } from "react-redux";
+import { logoutUserAction } from "@/redux/actions/auth-action/auth-action";
+import { useRouter } from "next/navigation";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const userData = useSelector((state: RootState) => state.user.userData);
   const loginData = useSelector((state: RootState) => state.auth.loginData);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const dispatch = useDispatch();
+  const router = useRouter();
 
-  const role = userData?.role || 'patient';
-  const displayName = userData?.name || loginData?.displayName || loginData?.email || 'User';
-  const initials = displayName
-    .split(' ')
-    .map((n: string) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+  const role = userData?.role || "patient";
+  const roleLabels: Record<string, string> = {
+    admin: "Administrator",
+    doctor: "Medical Doctor",
+    receptionist: "Reception Staff",
+    patient: "Clinic Patient",
+  };
+
+  const displayName =
+    userData?.name || loginData?.displayName || loginData?.email || "User";
+
+  const handleLogout = async () => {
+    try {
+      await (dispatch as any)(logoutUserAction());
+      router.push("/login");
+    } catch (err) {}
+  };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <Box
+      style={{
+        display: "flex",
+        height: "100vh",
+        overflow: "hidden",
+        backgroundColor: "#f8fafc",
+      }}
+    >
       <Sidebar
         role={role}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        {/* Top header */}
-        <header className="bg-white border-b border-gray-200 px-4 md:px-6 h-14 flex items-center justify-between shrink-0">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="md:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 text-xl"
-          >
-            ☰
-          </button>
-          <div className="md:hidden font-bold text-gray-800 flex items-center gap-2">
-            <span>🏥</span> ClinicAI
-          </div>
-          <div className="hidden md:block" />
-          <div className="flex items-center gap-3">
-            <div className="text-sm text-gray-500 hidden sm:block">{displayName}</div>
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-              {initials}
-            </div>
-          </div>
-        </header>
+      <Box
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          minWidth: 0,
+        }}
+      >
+        {/* Top Header */}
+        <Paper
+          component="header"
+          shadow="sm"
+          p="md"
+          radius={0}
+          style={{
+            height: rem(70),
+            zIndex: 30,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderBottom: "1px solid #e2e8f0",
+            backgroundColor: "rgba(255, 255, 255, 0.8)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          <Group gap="lg">
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              hiddenFrom="md"
+              size="lg"
+            >
+              <MenuIcon size={24} />
+            </ActionIcon>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
-      </div>
-    </div>
+            <Group gap="xs" hiddenFrom="md">
+              <Stethoscope size={24} color="#06b6d4" />
+              <Text fw={800} size="lg" color="dark">
+                ClinicAI
+              </Text>
+            </Group>
+
+            {/* Role indicator in header */}
+            <Group gap="xs" visibleFrom="md">
+              <Badge
+                variant="dot"
+                color="cyan"
+                size="lg"
+                p="md"
+                style={{
+                  backgroundColor: "rgba(6, 182, 212, 0.05)",
+                  border: "1px solid rgba(6, 182, 212, 0.1)",
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
+              >
+                <Group gap={6}>
+                  <ShieldCheck size={14} />
+                  <Text size="sm" span>
+                    {roleLabels[role] || role}
+                  </Text>
+                </Group>
+              </Badge>
+            </Group>
+          </Group>
+
+          <Group gap="md">
+            <Group gap={rem(8)} visibleFrom="sm">
+              <Tooltip label="Search Records">
+                <ActionIcon variant="subtle" color="gray" size="lg" radius="md">
+                  <Search size={20} />
+                </ActionIcon>
+              </Tooltip>
+              <Tooltip label="Notifications">
+                <ActionIcon variant="subtle" color="gray" size="lg" radius="md">
+                  <Bell size={20} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+
+            <Box
+              style={{
+                width: "1px",
+                height: "24px",
+                backgroundColor: "#e2e8f0",
+              }}
+              visibleFrom="sm"
+            />
+
+            <Menu shadow="md" width={220} radius="md" position="bottom-end">
+              <Menu.Target>
+                <UnstyledButton
+                  style={(theme: MantineTheme) => ({
+                    padding: `${rem(4)} ${rem(8)}`,
+                    borderRadius: theme.radius.md,
+                    transition: "background 0.2s ease",
+                    "&:hover": { backgroundColor: theme.colors.gray[0] },
+                  })}
+                >
+                  <Group gap="sm">
+                    <Avatar
+                      color="cyan"
+                      radius="md"
+                      size="md"
+                      style={{
+                        boxShadow: "0 4px 10px -2px rgba(6, 182, 212, 0.3)",
+                      }}
+                    >
+                      {displayName[0].toUpperCase()}
+                    </Avatar>
+                    <Box visibleFrom="sm" style={{ textAlign: "left" }}>
+                      <Text size="sm" fw={700} color="dark" lh={1}>
+                        {displayName}
+                      </Text>
+                      <Text size="xs" color="gray.6" mt={2} fw={500}>
+                        {roleLabels[role]}
+                      </Text>
+                    </Box>
+                  </Group>
+                </UnstyledButton>
+              </Menu.Target>
+
+              <Menu.Dropdown p="xs">
+                <Menu.Label>Personal Account</Menu.Label>
+                <Menu.Item leftSection={<User size={16} />}>
+                  My Profile
+                </Menu.Item>
+                <Menu.Item leftSection={<Settings size={16} />}>
+                  Account Settings
+                </Menu.Item>
+
+                <Menu.Divider />
+
+                <Menu.Label>System</Menu.Label>
+                <Menu.Item
+                  color="red"
+                  leftSection={<LogOut size={16} />}
+                  onClick={handleLogout}
+                >
+                  Sign Out
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
+        </Paper>
+
+        {/* Main Content Area */}
+        <Box
+          component="main"
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: rem(30),
+            "@media (max-width: 768px)": {
+              padding: rem(15),
+            },
+          }}
+        >
+          {children}
+        </Box>
+      </Box>
+    </Box>
   );
 }
-
