@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getAppointmentAction, updateAppointmentAction, deleteAppointmentAction } from '@/redux/actions/appointment-action/appointment-action';
 import { useRouter, useParams } from 'next/navigation';
@@ -8,6 +8,8 @@ import type { AppDispatch, RootState } from '@/redux/store';
 import useRequireAuth from '@/lib/hooks/useRequireAuth';
 import Link from 'next/link';
 import { toast } from 'react-toastify';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const STATUS_COLORS: Record<string, string> = {
   pending:   'bg-yellow-100 text-yellow-800',
@@ -30,6 +32,8 @@ export default function AppointmentView() {
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [newStatus, setNewStatus] = useState('');
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const pdfRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (id) dispatch(getAppointmentAction(id));
@@ -76,6 +80,27 @@ export default function AppointmentView() {
 
   const canManage = userRole === 'admin' || userRole === 'receptionist' || userRole === 'doctor';
 
+  const handleDownloadPDF = async () => {
+    if (!pdfRef.current) return;
+    setDownloadingPdf(true);
+    try {
+      const canvas = await html2canvas(pdfRef.current, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth  = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth   = pageWidth - 20;  // 10 mm margin each side
+      const imgHeight  = (canvas.height * imgWidth) / canvas.width;
+      const y = imgHeight < pageHeight ? (pageHeight - imgHeight) / 2 : 10;
+      pdf.addImage(imgData, 'PNG', 10, y > 10 ? 10 : y, imgWidth, imgHeight);
+      pdf.save(`appointment-${id}.pdf`);
+    } catch {
+      toast.error('Failed to generate PDF.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   if (loading || isLoading) return (
     <div className="flex items-center justify-center h-64">
       <span className="w-8 h-8 border-4 border-cyan-200 border-t-cyan-600 rounded-full animate-spin" />
@@ -103,9 +128,19 @@ export default function AppointmentView() {
           <h1 className="text-2xl font-bold text-gray-900">Appointment Details</h1>
           <p className="text-sm text-gray-500 mt-0.5">ID: {id}</p>
         </div>
+        {/* PDF Download — always visible */}
+        <button
+          onClick={handleDownloadPDF}
+          disabled={downloadingPdf}
+          className="ml-auto flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+        >
+          {downloadingPdf
+            ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Generating...</>
+            : '⬇ Download PDF'}
+        </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
+      <div ref={pdfRef} className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
         {/* ── Status badge ── */}
         <div className="px-6 py-4 flex items-center justify-between">
           <span className={`text-sm px-3 py-1 rounded-full font-semibold capitalize ${STATUS_COLORS[(appointment as any).status] || 'bg-gray-100 text-gray-600'}`}>

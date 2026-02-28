@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createAppointmentAction } from '@/redux/actions/appointment-action/appointment-action';
 import { fetchPatientsAction } from '@/redux/actions/patient-action/patient-action';
 import type { AppDispatch, RootState } from '@/redux/store';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import useRequireAuth from '@/lib/hooks/useRequireAuth';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -36,15 +36,20 @@ export default function CreateAppointment() {
   const { loading } = useRequireAuth(['admin', 'receptionist', 'doctor']);
   const dispatch = useDispatch() as AppDispatch;
   const router = useRouter();
+  const searchParams = useSearchParams();
   const patients = useSelector((state: RootState) => state.patient.patients);
   const currentUser = useSelector((state: RootState) => state.user.userData);
 
   const isDoctor = currentUser?.role === 'doctor';
 
+  // Read prefill params from URL e.g. /appointments/create?patientId=xxx&patientName=John
+  const prefillPatientId   = searchParams?.get('patientId')   ?? '';
+  const prefillPatientName = searchParams?.get('patientName') ?? '';
+
   const [form, setForm] = useState<AppointmentForm>({
-    patientId: '',
-    patientName: '',
-    doctorId: isDoctor ? (currentUser?.uid ?? '') : '',
+    patientId:   prefillPatientId,
+    patientName: prefillPatientName,
+    doctorId:   isDoctor ? (currentUser?.uid ?? '') : '',
     doctorName: isDoctor ? (currentUser?.name ?? '') : '',
     scheduledAt: '',
     reason: '',
@@ -171,7 +176,13 @@ export default function CreateAppointment() {
         {/* Patient */}
         <div>
           <label className={labelCls}>Patient <span className="text-red-500">*</span></label>
-          {patients.length > 0 ? (
+          {prefillPatientId && prefillPatientName ? (
+            <input
+              value={`${prefillPatientName} (pre-filled)`}
+              readOnly
+              className={`${inputCls} bg-gray-50 cursor-not-allowed`}
+            />
+          ) : patients.length > 0 ? (
             <select value={form.patientId} onChange={handlePatientChange} className={inputCls}>
               <option value="">— Select patient —</option>
               {patients.map((p) => (

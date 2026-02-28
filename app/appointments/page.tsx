@@ -106,10 +106,13 @@ export default function AppointmentsList() {
     });
   };
 
+  // Patients cannot manage (book/delete/update) appointments — only staff can
   const canManage =
-    userRole === "admin" ||
-    userRole === "receptionist" ||
-    userRole === "doctor";
+    !!userRole &&
+    userRole !== "patient" &&
+    (userRole === "admin" ||
+      userRole === "receptionist" ||
+      userRole === "doctor");
 
   if (loading)
     return (

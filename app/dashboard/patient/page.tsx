@@ -58,12 +58,6 @@ export default function PatientDashboard() {
       {/* Quick book */}
       <div className="flex gap-3 mb-6">
         <Link
-          href="/appointments/create"
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
-        >
-          📅 Book Appointment
-        </Link>
-        <Link
           href="/prescriptions"
           className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
         >
@@ -79,9 +73,12 @@ export default function PatientDashboard() {
         {upcoming.length ? (
           <div className="space-y-3">
             {upcoming.map((a: Appointment) => {
-              const raw = a.scheduledAt as unknown as { seconds?: number } | string | undefined;
+              const raw = a.scheduledAt as unknown as
+                | { seconds?: number }
+                | string
+                | undefined;
               const t =
-                raw && typeof raw === 'object' && raw.seconds
+                raw && typeof raw === "object" && raw.seconds
                   ? new Date(raw.seconds * 1000)
                   : raw
                     ? new Date(raw as string)

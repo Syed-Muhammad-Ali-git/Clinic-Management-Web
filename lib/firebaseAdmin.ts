@@ -11,7 +11,14 @@ function getApp(): admin.app.App {
     credential: cred
       ? admin.credential.cert(cred)
       : admin.credential.applicationDefault(),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || undefined,
+    projectId:
+      (cred && cred.project_id) ||
+      process.env.FIREBASE_PROJECT_ID ||
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket:
+      process.env.FIREBASE_STORAGE_BUCKET ||
+      process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
+      undefined,
   });
 }
 
