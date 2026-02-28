@@ -1,105 +1,104 @@
-// Auth action functions are defined here...!
-
-import { collection, addDoc } from "firebase/firestore";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-} from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import {
-  LOGIN_USER,
-  LOG_OUT_USER,
-} from "@/redux/reducers/auth-reducer/auth-reducer";
-import { setCookie, deleteCookie } from "cookies-next";
+// Centralized auth actions that call lib/auth helpers and update redux state
+import { signup, login, logout, signInWithGoogle, forgotPassword } from '@/lib/auth';
+import { db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { setUser, setLoading, setError, clearAuth } from '@/redux/slices/authSlice';
+import { setCookie, deleteCookie } from 'cookies-next';
 
 interface UserData {
   name?: string;
   email: string;
-  password: string;
+  password?: string;
 }
 
-// Note: Sign up user...!
 const signUpUser = (userData: UserData) => {
-  return async () => {
-    console.log("User: ", userData);
-
+  return async (dispatch: any) => {
+    dispatch(setLoading(true));
     try {
-      const createUser = await createUserWithEmailAndPassword(
-        auth,
-        userData?.email,
-        userData?.password,
-      );
-      console.log(createUser);
+      const user = await signup(userData.email, userData.password || '', userData.name || '');
+      if (user) {
+        // create user doc in Firestore with default role 'patient'
+        await setDoc(doc(db, 'users', user.uid), {
+          name: user.displayName || userData.name || '',
+          email: user.email || userData.email,
+          role: 'patient',
+          createdAt: new Date(),
+        });
 
-      const saveUserData = {
-        ...userData,
-        uid: createUser?.user?.uid,
-      };
-
-      if (createUser) {
-        // Note: Saving data in DB...!
-        const firebaseDocRef = await addDoc(
-          collection(db, "Users"),
-          saveUserData,
-        );
-        console.log("Saved data in DB: ", firebaseDocRef);
+        const token = await user.getIdToken();
+        setCookie('token', token);
+        dispatch(setUser({ uid: user.uid, email: user.email, displayName: user.displayName }));
       }
-    } catch (error: any) {
-      console.log("Something wnet wrong while creating user: ", error.message);
+    } catch (err: any) {
+      dispatch(setError(err?.message || 'Signup failed'));
+    } finally {
+      dispatch(setLoading(false));
     }
   };
 };
 
-// Note: Log in user...!
 const logInUser = (userData: UserData) => {
   return async (dispatch: any) => {
-    console.log("User: ", userData);
-
+    dispatch(setLoading(true));
     try {
-      const res = await signInWithEmailAndPassword(
-        auth,
-        userData?.email,
-        userData?.password,
-      );
-      console.log("Login response: ", res);
-
-      const saveUser = {
-        email: res?.user?.email,
-        uid: res?.user?.uid,
-      };
-
-      const userToken = await res?.user?.getIdToken();
-      if (userToken) {
-        // Saving token...!
-        setCookie("token", userToken);
-
-        // Saving auth user in redux...!
-        dispatch(LOGIN_USER(saveUser));
-
-        window.location.reload();
+      const user = await login(userData.email, userData.password || '');
+      if (user) {
+        const token = await user.getIdToken();
+        setCookie('token', token);
+        dispatch(setUser({ uid: user.uid, email: user.email, displayName: user.displayName }));
       }
-    } catch (error: any) {
-      console.log("Something went wrong while login user: ", error.message);
+    } catch (err: any) {
+      dispatch(setError(err?.message || 'Login failed'));
+    } finally {
+      dispatch(setLoading(false));
     }
   };
 };
 
-// Note: Log out user...!
 const logOutUser = () => {
   return async (dispatch: any) => {
-    // Removing user auth from FB authentication...!
-    await signOut(auth);
-
-    // Removing user from redux...!
-  dispatch(LOG_OUT_USER(null as any));
-
-    // Removing user cookies...!
-    deleteCookie("token");
-
-    alert("You have logged out successfully");
-    window.location.reload();
+    dispatch(setLoading(true));
+    try {
+      await logout();
+      deleteCookie('token');
+      dispatch(clearAuth());
+    } catch (err: any) {
+      dispatch(setError(err?.message || 'Logout failed'));
+    } finally {
+      dispatch(setLoading(false));
+    }
   };
 };
 
-export { signUpUser, logInUser, logOutUser };
+const googleSignIn = () => {
+  return async (dispatch: any) => {
+    dispatch(setLoading(true));
+    try {
+      const user = await signInWithGoogle();
+      if (user) {
+        const token = await user.getIdToken();
+        setCookie('token', token);
+        dispatch(setUser({ uid: user.uid, email: user.email, displayName: user.displayName }));
+      }
+    } catch (err: any) {
+      dispatch(setError(err?.message || 'Google sign-in failed'));
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+};
+
+const sendPasswordReset = (email: string) => {
+  return async (dispatch: any) => {
+    dispatch(setLoading(true));
+    try {
+      await forgotPassword(email);
+    } catch (err: any) {
+      dispatch(setError(err?.message || 'Password reset failed'));
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+};
+
+export { signUpUser, logInUser, logOutUser, googleSignIn, sendPasswordReset };
