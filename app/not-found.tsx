@@ -80,7 +80,7 @@ export default function NotFound() {
             <Map size={16} color="#06b6d4" />
             <Text
               size="xs"
-              color="dimmed"
+              c="dimmed"
               className="tracking-widest uppercase"
             >
               Lost in ClinicAI Ecosystem

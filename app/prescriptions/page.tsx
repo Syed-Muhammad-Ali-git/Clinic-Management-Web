@@ -91,28 +91,31 @@ function AiExplainModal({ prescription, opened, onClose }: AiExplainModalProps) 
 
 // ------------ Main Page ------------
 export default function PrescriptionsPage() {
-  const { user } = useRequireAuth();
+  useRequireAuth();
   const dispatch = useDispatch<AppDispatch>();
   const { prescriptions, loading, error } = useSelector((s: RootState) => s.prescription);
+  const userData = useSelector((s: RootState) => s.user.userData);
+  const loginData = useSelector((s: RootState) => s.auth.loginData);
 
   const [search, setSearch] = useState('');
   const [aiPrescription, setAiPrescription] = useState<Prescription | null>(null);
   const [aiModalOpen, setAiModalOpen] = useState(false);
 
-  const role = user?.role ?? '';
+  const role = userData?.role ?? '';
+  const uid = loginData?.uid ?? userData?.uid ?? '';
   const canCreate = ['admin', 'doctor'].includes(role);
   const isPatient = role === 'patient';
 
   useEffect(() => {
-    if (!user) return;
+    if (!uid) return;
     if (isPatient) {
-      dispatch(fetchPrescriptionsAction({ patientId: user.uid }));
+      dispatch(fetchPrescriptionsAction({ patientId: uid }));
     } else if (role === 'doctor') {
-      dispatch(fetchPrescriptionsAction({ doctorId: user.uid }));
+      dispatch(fetchPrescriptionsAction({ doctorId: uid }));
     } else {
       dispatch(fetchPrescriptionsAction());
     }
-  }, [user, dispatch, isPatient, role]);
+  }, [uid, dispatch, isPatient, role]);
 
   useEffect(() => {
     if (error) toast.error(error);
@@ -137,7 +140,7 @@ export default function PrescriptionsPage() {
       {/* Header */}
       <Group justify="space-between" mb="lg" wrap="wrap" gap="sm">
         <div>
-          <Title order={2} style={{ color: '#e2e8f0' }}>Prescriptions</Title>
+          <Title order={2} style={{ color: '#1e293b' }}>Prescriptions</Title>
           <Text size="sm" c="dimmed" mt={4}>
             {isPatient ? 'Your prescription history' : 'Manage patient prescriptions'}
           </Text>
@@ -159,13 +162,6 @@ export default function PrescriptionsPage() {
         value={search}
         onChange={(e) => setSearch(e.currentTarget.value)}
         mb="lg"
-        styles={{
-          input: {
-            backgroundColor: '#1e293b',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: '#e2e8f0',
-          },
-        }}
       />
 
       {/* Loading */}

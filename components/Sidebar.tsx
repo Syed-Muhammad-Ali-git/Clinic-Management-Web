@@ -187,14 +187,14 @@ export default function Sidebar({ role, open, onClose }: SidebarProps) {
               <Text
                 fw={800}
                 size="xl"
-                color="white"
+                c="white"
                 style={{ letterSpacing: "-0.5px", lineHeight: 1 }}
               >
                 ClinicAI
               </Text>
               <Text
                 size="xs"
-                color="gray.6"
+                c="gray.6"
                 fw={600}
                 mt={4}
                 style={{ letterSpacing: "1px", textTransform: "uppercase" }}
@@ -213,7 +213,7 @@ export default function Sidebar({ role, open, onClose }: SidebarProps) {
             <Text
               size="xs"
               fw={700}
-              color="gray.7"
+              c="gray.7"
               px="sm"
               mb={8}
               style={{ textTransform: "uppercase", letterSpacing: "1px" }}
@@ -245,12 +245,12 @@ export default function Sidebar({ role, open, onClose }: SidebarProps) {
                 border: "1px solid rgba(255, 255, 255, 0.1)",
               })}
             >
-              <Text fw={700} color="white">
+              <Text fw={700} c="white">
                 {initials}
               </Text>
             </Box>
             <Box style={{ flex: 1, minWidth: 0 }}>
-              <Text size="sm" fw={600} color="white" truncate>
+              <Text size="sm" fw={600} c="white" truncate>
                 {displayName}
               </Text>
               <Badge

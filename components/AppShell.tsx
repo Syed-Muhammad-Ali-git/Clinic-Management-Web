@@ -117,7 +117,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
             <Group gap="xs" hiddenFrom="md">
               <Stethoscope size={24} color="#06b6d4" />
-              <Text fw={800} size="lg" color="dark">
+              <Text fw={800} size="lg" c="dark">
                 ClinicAI
               </Text>
             </Group>
@@ -191,10 +191,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       {displayName[0].toUpperCase()}
                     </Avatar>
                     <Box visibleFrom="sm" style={{ textAlign: "left" }}>
-                      <Text size="sm" fw={700} color="dark" lh={1}>
+                      <Text size="sm" fw={700} c="dark" lh={1}>
                         {displayName}
                       </Text>
-                      <Text size="xs" color="gray.6" mt={2} fw={500}>
+                      <Text size="xs" c="gray.6" mt={2} fw={500}>
                         {roleLabels[role]}
                       </Text>
                     </Box>

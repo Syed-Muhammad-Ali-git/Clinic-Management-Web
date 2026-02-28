@@ -121,7 +121,7 @@ export default function LoginPage() {
           >
             ClinicAI
           </Title>
-          <Text color="gray.5" size="sm">
+          <Text c="gray.5" size="sm">
             Intelligent Clinic Management
           </Text>
         </Stack>
@@ -150,7 +150,7 @@ export default function LoginPage() {
 
               {error && (
                 <Text
-                  color="red.4"
+                  c="red.4"
                   size="sm"
                   mb={20}
                   p="md"
@@ -168,7 +168,7 @@ export default function LoginPage() {
                 <Stack gap="md">
                   <TextInput
                     label={
-                      <Text color="gray.4" size="sm" fw={500}>
+                      <Text c="gray.4" size="sm" fw={500}>
                         Email Address
                       </Text>
                     }
@@ -189,7 +189,7 @@ export default function LoginPage() {
                   <Stack gap={5}>
                     <PasswordInput
                       label={
-                        <Text color="gray.4" size="sm" fw={500}>
+                        <Text c="gray.4" size="sm" fw={500}>
                           Password
                         </Text>
                       }
@@ -213,7 +213,7 @@ export default function LoginPage() {
                         type="button"
                         size="xs"
                         fw={600}
-                        color="cyan.4"
+                        c="cyan.4"
                         onClick={() => setShowForgot(true)}
                       >
                         Forgot password?
@@ -248,7 +248,7 @@ export default function LoginPage() {
 
               <Button
                 variant="outline"
-                color="gray.4"
+                c="gray.4"
                 fullWidth
                 size="md"
                 radius="md"
@@ -286,9 +286,9 @@ export default function LoginPage() {
                 Continue with Google
               </Button>
 
-              <Text ta="center" mt="xl" size="sm" color="gray.5">
+              <Text ta="center" mt="xl" size="sm" c="gray.5">
                 New to ClinicAI?{" "}
-                <Anchor component={Link} href="/signup" fw={700} color="cyan.4">
+                <Anchor component={Link} href="/signup" fw={700} c="cyan.4">
                   Register Account
                 </Anchor>
               </Text>
@@ -298,7 +298,7 @@ export default function LoginPage() {
               <Anchor
                 component="button"
                 size="sm"
-                color="gray.5"
+                c="gray.5"
                 onClick={() => {
                   setShowForgot(false);
                   setResetSent(false);
@@ -316,7 +316,7 @@ export default function LoginPage() {
               >
                 Reset Password
               </Title>
-              <Text size="sm" color="gray.5">
+              <Text size="sm" c="gray.5">
                 Enter your email and we'll send a recovery link.
               </Text>
 
@@ -339,7 +339,7 @@ export default function LoginPage() {
                   <Stack gap="md">
                     <TextInput
                       label={
-                        <Text color="gray.4" size="sm" fw={500}>
+                        <Text c="gray.4" size="sm" fw={500}>
                           Email Address
                         </Text>
                       }

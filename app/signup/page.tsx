@@ -105,7 +105,7 @@ export default function SignupPage() {
       <Box className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] animate-pulse" />
       <Box className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-cyan-600/10 rounded-full blur-[100px]" />
 
-      <Container size={450} className="relative z-10">
+      <Container size={600} className="relative z-10 w-full px-4">
         <Stack align="center" gap="xs" mb={30}>
           <Box className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl shadow-cyan-500/20 -rotate-3">
             <Stethoscope size={32} color="white" />
@@ -118,7 +118,7 @@ export default function SignupPage() {
           >
             ClinicAI
           </Title>
-          <Text color="gray.5" size="sm">
+          <Text c="gray.5" size="sm">
             Create Professional Provider Account
           </Text>
         </Stack>
@@ -139,7 +139,7 @@ export default function SignupPage() {
 
           {error && (
             <Text
-              color="red.4"
+              c="red.4"
               size="sm"
               mb={20}
               p="md"
@@ -157,7 +157,7 @@ export default function SignupPage() {
             <Stack gap="md">
               <TextInput
                 label={
-                  <Text color="gray.4" size="sm" fw={500}>
+                  <Text c="gray.4" size="sm" fw={500}>
                     Full Name
                   </Text>
                 }
@@ -177,7 +177,7 @@ export default function SignupPage() {
 
               <TextInput
                 label={
-                  <Text color="gray.4" size="sm" fw={500}>
+                  <Text c="gray.4" size="sm" fw={500}>
                     Email Address
                   </Text>
                 }
@@ -197,7 +197,7 @@ export default function SignupPage() {
 
               <Select
                 label={
-                  <Text color="gray.4" size="sm" fw={500}>
+                  <Text c="gray.4" size="sm" fw={500}>
                     Professional Role
                   </Text>
                 }
@@ -233,7 +233,7 @@ export default function SignupPage() {
 
               <PasswordInput
                 label={
-                  <Text color="gray.4" size="sm" fw={500}>
+                  <Text c="gray.4" size="sm" fw={500}>
                     Password
                   </Text>
                 }
@@ -254,7 +254,7 @@ export default function SignupPage() {
 
               <PasswordInput
                 label={
-                  <Text color="gray.4" size="sm" fw={500}>
+                  <Text c="gray.4" size="sm" fw={500}>
                     Confirm Password
                   </Text>
                 }
@@ -300,7 +300,7 @@ export default function SignupPage() {
 
           <Button
             variant="outline"
-            color="gray.4"
+            c="gray.4"
             fullWidth
             size="md"
             radius="md"
@@ -338,9 +338,9 @@ export default function SignupPage() {
             Sign up with Google
           </Button>
 
-          <Text ta="center" mt="xl" size="sm" color="gray.5">
+          <Text ta="center" mt="xl" size="sm" c="gray.5">
             Already have an account?{" "}
-            <Anchor component={Link} href="/login" fw={700} color="cyan.4">
+            <Anchor component={Link} href="/login" fw={700} c="cyan.4">
               Sign In
             </Anchor>
           </Text>

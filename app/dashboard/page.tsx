@@ -20,7 +20,7 @@ export default function DashboardPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <span className="w-12 h-12 border-4 border-cyan-200 border-t-cyan-600 rounded-full animate-spin" />
-        <Text color="gray.5" fw={500}>
+        <Text c="gray.5" fw={500}>
           Securing your session...
         </Text>
       </div>
